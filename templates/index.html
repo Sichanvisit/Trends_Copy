@@ -480,7 +480,7 @@
             </div>
         </div>
         <div class="header-stats">
-            <span style="font-size: 13px; color: var(--text-secondary);">로컬 Qwen API: <code style="color: var(--accent-primary);">{{ local_qwen_url }}</code></span>
+            <span style="font-size: 13px; color: var(--text-secondary);">로컬 AI API: <code style="color: var(--accent-primary);">{{ local_qwen_url }}</code></span>
         </div>
     </header>
 
@@ -635,7 +635,7 @@
                         <input type="text" id="extra-instruction" class="input-text" placeholder="예: 마지막에 위트있는 질문 추가, 시니컬한 종결">
                     </div>
 
-                    <button class="btn" id="btn-generate" onclick="generateDraftX()" style="margin-bottom: 20px;">Qwen 콘텐츠 초안 변환 생성</button>
+                    <button class="btn" id="btn-generate" onclick="generateDraftX()" style="margin-bottom: 20px;">Trends_Copy 초안 변환 생성</button>
 
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 20px 0;">
 
@@ -1302,7 +1302,7 @@
             preview.innerHTML = `
                 <div class="preview-placeholder">
                     <div class="loader"></div>
-                    <div style="margin-top: 10px;">Qwen 인텔리전스 결합 변환 중...<br>완성 후 복사 및 저장 버튼이 활성화됩니다.</div>
+                    <div style="margin-top: 10px;">Trends_Copy 인텔리전스 결합 변환 중...<br>완성 후 복사 및 저장 버튼이 활성화됩니다.</div>
                 </div>
             `;
 
@@ -1320,7 +1320,7 @@
             .then(data => {
                 if (data.draft) {
                     latestGeneratedDraft = data.draft; // 이미지 생성을 위해 임시보관
-                    let modeText = data.is_offline ? "⚠️ [Template Generator 오프라인 모드 작동]" : "⚡ [로컬 Qwen AI 모델 생성 성공]";
+                    let modeText = data.is_offline ? "⚠️ [Template Generator 오프라인 모드 작동]" : "⚡ [로컬 AI 모델 생성 성공]";
                     preview.innerHTML = `
 <div style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--accent-secondary); font-weight: 600; margin-bottom: 12px; display: inline-block;">${modeText}</div>
 <div style="font-weight: 500; font-size: 14px; margin-bottom: 20px; color: #f3f4f6; white-space: pre-wrap; line-height: 1.8;">${data.draft}</div>

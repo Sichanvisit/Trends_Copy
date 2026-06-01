@@ -17,7 +17,7 @@ if __name__ == "__main__":
             
         print("=" * 60)
         print("   🌐 Trends_Copy - FastAPI 실시간 대시보드 기동 🌐")
-        print("   - 로컬 Qwen AI 재구성 엔진 및 옵시디언 자동 저장 연동 완료 -")
+        print("   - 로컬 AI 재구성 엔진 및 옵시디언 자동 저장 연동 완료 -")
         print("   - 대시보드 주소: http://127.0.0.1:8000")
         print("=" * 60)
         
