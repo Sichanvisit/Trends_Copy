@@ -473,7 +473,7 @@
 
     <header>
         <div class="header-logo">
-            <div class="logo-badge">X</div>
+            <div class="logo-badge">TC</div>
             <div class="header-title">
                 <h1>Trends_Copy v2.0</h1>
                 <p id="local-qwen-status">로컬 인텔리전스 변환 시스템</p>
@@ -549,7 +549,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="stats-desc" style="margin-top: 10px; color: var(--warn-color);">💡 여러 개의 글감을 동시 선택하여 변환하면, AI가 글감들의 요지를 조화롭게 병합한 X 초안 카드를 생성해 줍니다!</div>
+                <div class="stats-desc" style="margin-top: 10px; color: var(--warn-color);">💡 여러 개의 글감을 동시 선택하여 변환하면, AI가 글감들의 요지를 조화롭게 병합한 콘텐츠 초안을 생성해 줍니다!</div>
             </div>
         </div>
     </div>
@@ -597,7 +597,7 @@
             <!-- 작업대 (4번, 5번 요구사항 - 커스텀 추가) -->
             <div class="card workstation" style="margin-bottom: 0; display: block; height: 100%;">
                 <div style="height: 100%; display: block;">
-                    <div class="card-title" style="margin-bottom: 12px; color: var(--accent-secondary);">X-Draft Workstation</div>
+                    <div class="card-title" style="margin-bottom: 12px; color: var(--accent-secondary);">Trends_Copy Workstation</div>
                     
                     <div class="form-group">
                         <label class="form-label">선택한 글감 목록</label>
@@ -660,7 +660,7 @@
                         <div class="option-grid" id="theme-options" style="margin-bottom: 10px;">
                             <!-- JS 동적 렌더링 -->
                         </div>
-                        <button class="btn btn-secondary" id="btn-gen-img" onclick="generateImgPrompt()" style="margin-bottom: 10px; padding: 8px 12px; font-size: 12px; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); color: var(--text-primary);">Midjourney / DALL-E 이미지 프롬프트 빌드</button>
+                        <button class="btn btn-secondary" id="btn-gen-img" onclick="generateImgPrompt()" style="margin-bottom: 10px; padding: 8px 12px; font-size: 12px; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); color: var(--text-primary);">이미지 프롬프트 빌드</button>
                         
                         <div class="preview-box" id="image-prompt-output" style="height: 60px; min-height: 60px; padding: 8px; font-size: 11px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow-y: auto;">
                             <span style="color: var(--text-secondary);">초안 생성 완료 후 이 버튼을 누르면 AI 전용 영문 이미지 프롬프트를 자동으로 조각해 줍니다.</span>
@@ -672,7 +672,7 @@
             <!-- 프리뷰 영역 (우측 컬럼 전체 높이로 완벽 확장) -->
             <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0; padding: 24px; height: 100%;">
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <span>X 게시글 초안 실시간 프리뷰</span>
+                    <span>초안 실시간 프리뷰</span>
                     <div style="display: flex; gap: 8px;">
                         <button id="btn-copy-draft" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="copyDraftToClipboard()">📋 복사</button>
                         <button id="btn-save-obsidian" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="saveDraftToObsidian()">💾 옵시디언 저장</button>
@@ -1341,7 +1341,7 @@
                     saveBtn.style.color = "var(--success-color)";
                     saveBtn.style.cursor = "pointer";
                     saveBtn.style.opacity = "1";
-                    saveBtn.innerHTML = "💾 옵시디언 저장";
+                    saveBtn.innerHTML = "💾 저장";
                 }
             })
             .catch(e => {
@@ -1442,11 +1442,11 @@
             if (mode === "image") {
                 document.getElementById("toggle-prompt-img").classList.add("active");
                 document.getElementById("prompt-mode-title").innerText = "Image";
-                document.getElementById("btn-gen-img").innerText = "Midjourney / DALL-E 이미지 프롬프트 빌드";
+                document.getElementById("btn-gen-img").innerText = "이미지 프롬프트 빌드";
             } else {
                 document.getElementById("toggle-prompt-vid").classList.add("active");
                 document.getElementById("prompt-mode-title").innerText = "Video";
-                document.getElementById("btn-gen-img").innerText = "Luma / Runway 동영상 프롬프트 빌드";
+                document.getElementById("btn-gen-img").innerText = "동영상 프롬프트 빌드";
             }
             
             // 프리뷰 문구 초기화
