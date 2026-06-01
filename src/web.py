@@ -12,7 +12,7 @@ from src.storage import load_content_index, add_posts_to_storage, sanitize_filen
 from src.crawler import crawl_nate_pann, crawl_nate_news, crawl_geeknews
 from src.generator import FORMS, STYLES, generate_draft, generate_image_prompt
 
-app = FastAPI(title="X Content Workbench Dashboard", version="2.0.0")
+app = FastAPI(title="Trends_Copy Dashboard", version="2.0.0")
 
 # 경로 보장
 static_path = config.BASE_DIR / "static"
@@ -228,7 +228,7 @@ def save_draft_api(req: SaveDraftRequest):
 {req.draft_text}
 
 ---
-*본 X 초안 카드는 X Content Workbench의 템플릿 변환 파이프라인으로 구축되었습니다.*
+*본 X 초안 카드는 Trends_Copy의 템플릿 변환 파이프라인으로 구축되었습니다.*
 """
         with open(draft_path, "w", encoding="utf-8") as f:
             f.write(full_draft_file_content)

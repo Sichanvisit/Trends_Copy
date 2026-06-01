@@ -11,7 +11,7 @@ def clear_terminal():
 
 def print_header():
     print("=" * 60)
-    print("        🚀 X Content Workbench (개인 콘텐츠 워크벤치) 🚀        ")
+    print("        🚀 Trends_Copy (인텔리전스 워크벤치) 🚀        ")
     print("   - 뉴스·커뮤니티 글감 자동 수집 및 X 초안 변환 워크스테이션 -   ")
     print("=" * 60)
 
@@ -173,7 +173,7 @@ def run_generator_flow():
 {draft_text}
 
 ---
-*본 X 초안 카드는 X Content Workbench의 템플릿 변환 파이프라인으로 구축되었습니다.*
+*본 X 초안 카드는 Trends_Copy의 템플릿 변환 파이프라인으로 구축되었습니다.*
 """
     try:
         with open(draft_path, "w", encoding="utf-8") as f:
@@ -205,7 +205,7 @@ def main_menu_loop():
         elif menu_choice == "3":
             run_generator_flow()
         elif menu_choice == "4":
-            print("\n[*] X Content Workbench를 종료합니다. 오늘도 파급력 있는 하루 되세요!")
+            print("\n[*] Trends_Copy를 종료합니다. 오늘도 파급력 있는 하루 되세요!")
             sys.exit(0)
         else:
             print("[!] 올바르지 않은 입력입니다. 1에서 4 사이의 숫자가 입력해 주세요.")
