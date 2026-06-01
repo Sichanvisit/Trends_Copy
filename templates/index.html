@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Content Workbench Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --accent-glow: rgba(59, 130, 246, 0.35);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --success-color: #10b981;
+            --warn-color: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
+            scrollbar-width: thin;
+            scrollbar-color: var(--card-border) transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .container {
+            flex: 1;
+            padding: 40px;
+            max-width: 1700px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 40px;
+        }
+
+        /* 왼쪽 사이드바: 통계 및 제어 */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-number {
+            font-size: 44px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* 왼쪽 사이드바용 콤팩트 스케일 및 모달 스타일 */
+        .sidebar-upper {
+            gap: 24px !important;
+        }
+        .sidebar-upper .card {
+            padding: 20px 24px !important;
+            border-radius: 16px;
+        }
+        .sidebar-upper .card-title {
+            margin-bottom: 16px !important;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        .sidebar-upper .stats-number {
+            font-size: 40px !important;
+        }
+        .sidebar-upper .stats-desc {
+            font-size: 12px;
+            margin-top: 6px;
+        }
+        .sidebar-upper .btn {
+            padding: 10px 20px !important;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        /* 모달 오버레이 및 카드 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-card {
+            background: #0b0f19;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--text-primary);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            box-shadow: none;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 오른쪽 컨텐츠 영역 */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* 날짜 & 카테고리 필터링 바 */
+        .filter-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 12px 20px;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 글감 리스트 테이블 */
+        .post-list-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #111625; /* 겹침을 방지하기 위해 투명도가 없는 불투명 솔리드 색상 적용 */
+            padding: 14px 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--card-border);
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 320px;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-nate { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .badge-news { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .badge-geek { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge-manual { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+        /* 워크스테이션 작업대 */
+        .workstation-container {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 30px;
+        }
+
+        .workstation {
+            background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.08), transparent), var(--card-bg);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .option-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .option-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .option-card.selected {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-secondary);
+        }
+
+        .option-card input {
+            cursor: pointer;
+        }
+
+        /* 변환결과 프리뷰 박스 */
+        .preview-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #e5e7eb;
+        }
+
+        .preview-placeholder {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-secondary);
+            text-align: center;
+            gap: 12px;
+        }
+
+        .input-text {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .input-text:focus {
+            border-color: var(--accent-primary);
+        }
+
+        /* 로더 애니메이션 */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--accent-secondary);
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 이미지 프롬프트 생성 란 */
+        .image-prompt-card {
+            background: radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.08), transparent), var(--card-bg);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            margin-top: 24px;
+        }
+
+        .img-theme-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .theme-btn {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            padding: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn.active {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">
+            <div class="logo-badge">X</div>
+            <div class="header-title">
+                <h1>Content Workbench v2.0</h1>
+                <p id="local-qwen-status">로컬 인텔리전스 변환 시스템</p>
+            </div>
+        </div>
+        <div class="header-stats">
+            <span style="font-size: 13px; color: var(--text-secondary);">로컬 Qwen API: <code style="color: var(--accent-primary);">{{ local_qwen_url }}</code></span>
+        </div>
+    </header>
+
+    <!-- 상단 영역: 모바일/PC 데이터 수집 및 글감 데이터베이스 (세로 높이 자동 스트레칭 정렬) -->
+    <div class="container" style="display: grid; grid-template-columns: 320px 1fr; gap: 40px; align-items: stretch; margin-top: 30px; margin-bottom: 0; padding-bottom: 0;">
+        <!-- 상단 왼쪽: 데이터 통계 및 통합 제어 (데이터베이스와 아래 끝라인 완벽 일치) -->
+        <div class="sidebar-upper" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">총 누적 글감</div>
+                <div class="stats-number" id="stats-total">0</div>
+                <div class="stats-desc">중복이 완전히 제거된 고유 글감 개수</div>
+            </div>
+
+            <!-- 출처 분포 도넛 차트 -->
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">출처별 분포도</div>
+                <div style="height: 140px; position: relative; display: flex; justify-content: center;">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 자동 제어 컨트롤러 -->
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">실시간 수집 제어</div>
+                <button class="btn" id="btn-collect-all" onclick="triggerCollection('all')" style="margin-bottom: 10px;">통합 자동 수집 실행</button>
+                <button class="btn btn-secondary" id="btn-add-manual" onclick="openManualPostModal()" style="margin-top: 0; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: var(--text-primary);">✍️ 개별 글감 직접 추가</button>
+                <div class="stats-desc" style="text-align: center; margin-top: 6px;">Nate + GeekNews 통합 수집 및 수동 작성</div>
+            </div>
+        </div>
+
+        <!-- 상단 오른쪽: 필터바 및 데이터베이스 테이블 영역 -->
+        <div class="db-area" style="display: flex; flex-direction: column; gap: 20px; justify-content: space-between; height: 100%;">
+            <!-- 날짜 & 카테고리 필터 바 (1번, 2번 요구사항) -->
+            <div class="filter-bar" style="margin-bottom: 0;">
+                <div class="tab-group">
+                    <button class="tab-btn active" id="tab-all" onclick="filterSource('all')">전체</button>
+                    <button class="tab-btn" id="tab-nate" onclick="filterSource('nate')">네이트판</button>
+                    <button class="tab-btn" id="tab-nate_news" onclick="filterSource('nate_news')">네이트뉴스</button>
+                    <button class="tab-btn" id="tab-geeknews" onclick="filterSource('geeknews')">긱뉴스</button>
+                    <button class="tab-btn" id="tab-manual" onclick="filterSource('manual')">직접입력</button>
+                </div>
+                <div class="date-selector">
+                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">수집일 필터:</span>
+                    <input type="date" id="date-filter-select" class="input-text" style="width: 160px; padding: 6px 12px;" onchange="applyFilters()">
+                    <button class="tab-btn" style="background: rgba(255,255,255,0.05);" onclick="resetFilters()">초기화</button>
+                </div>
+            </div>
+
+            <!-- 실시간 DB 테이블 (3번 요구사항 - 다중 선택 기능 탑재) -->
+            <div class="card" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="card-title" style="margin-bottom: 10px;">실시간 수집 글감 데이터베이스 (다중 병합 지원)</div>
+                <div class="post-list-container" style="flex: 1; max-height: 390px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align: center;">선택</th>
+                                <th style="width: 70px;">ID</th>
+                                <th style="width: 120px;">출처</th>
+                                <th style="width: 120px;">수집일</th>
+                                <th>글 제목</th>
+                                <th style="width: 200px; text-align: center;">원문/파일</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posts-table-body">
+                            <!-- JS 동적 렌더링 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stats-desc" style="margin-top: 10px; color: var(--warn-color);">💡 여러 개의 글감을 동시 선택하여 변환하면, AI가 글감들의 요지를 조화롭게 병합한 X 초안 카드를 생성해 줍니다!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 영역: 워크플레이스 및 디테일 보드 (워크스테이션 상단 높이 자동 정렬) -->
+    <div class="container" style="display: grid; grid-template-columns: 320px 1fr; gap: 40px; align-items: start; margin-top: 40px; margin-bottom: 40px; padding-top: 0;">
+        <!-- 하단 왼쪽: 선택된 폼 및 스타일의 실시간 프롬프트 카드 (워크스테이션과 탑라인 완벽 정렬) -->
+        <div class="sidebar-lower" style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="card" id="form-details-card" style="border-color: rgba(139, 92, 246, 0.2); background: linear-gradient(135deg, rgba(139, 92, 246, 0.02), transparent); margin-bottom: 0;">
+                <div class="card-title" style="color: var(--accent-secondary); margin-bottom: 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 0;" onclick="toggleCardCollapse('form')">
+                    <span>📄 선택된 변환 양식 (FORM)</span>
+                    <span class="collapse-icon" id="icon-form" style="font-size: 10px; transition: transform 0.2s ease; transform: rotate(0deg); color: var(--text-secondary);">▼</span>
+                </div>
+                <div class="card-body" id="body-form" style="margin-top: 12px; transition: all 0.3s ease;">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);" id="form-detail-name">독백형 (기본)</div>
+                    <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);" id="form-detail-desc">양식 카드를 클릭하면 상세 프롬프트 지시사항이 여기에 표시됩니다.</div>
+                </div>
+            </div>
+
+            <div class="card" id="style-details-card" style="border-color: rgba(59, 130, 246, 0.2); background: linear-gradient(135deg, rgba(59, 130, 246, 0.02), transparent); margin-bottom: 0;">
+                <div class="card-title" style="color: var(--accent-primary); margin-bottom: 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 0;" onclick="toggleCardCollapse('style')">
+                    <span>✨ 선택된 적용 스타일 (STYLE)</span>
+                    <span class="collapse-icon" id="icon-style" style="font-size: 10px; transition: transform 0.2s ease; transform: rotate(0deg); color: var(--text-secondary);">▼</span>
+                </div>
+                <div class="card-body" id="body-style" style="margin-top: 12px; transition: all 0.3s ease;">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);" id="style-detail-name">선택된 스타일 없음</div>
+                    <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);" id="style-detail-desc">스타일 카드를 클릭하면 상세 프롬프트 지시사항이 여기에 표시됩니다.</div>
+                </div>
+            </div>
+
+            <div class="card" id="theme-details-card" style="border-color: rgba(16, 185, 129, 0.2); background: linear-gradient(135deg, rgba(16, 185, 129, 0.02), transparent); margin-bottom: 0;">
+                <div class="card-title" style="color: var(--success-color); margin-bottom: 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 0;" onclick="toggleCardCollapse('theme')">
+                    <span>🎨 선택된 이미지 테마 (THEME)</span>
+                    <span class="collapse-icon" id="icon-theme" style="font-size: 10px; transition: transform 0.2s ease; transform: rotate(0deg); color: var(--text-secondary);">▼</span>
+                </div>
+                <div class="card-body" id="body-theme" style="margin-top: 12px; transition: all 0.3s ease;">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);" id="theme-detail-name">캐릭터형 (기본)</div>
+                    <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);" id="theme-detail-desc">테마 카드를 선택하면 상세 프롬프트 지시사항이 여기에 표시됩니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 오른쪽: 워크스테이션 작업대 및 프리뷰 영역 -->
+        <div class="workstation-container" style="margin-top: 0; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 30px; align-items: stretch;">
+            <!-- 작업대 (4번, 5번 요구사항 - 커스텀 추가) -->
+            <div class="card workstation" style="margin-bottom: 0; display: block; height: 100%;">
+                <div style="height: 100%; display: block;">
+                    <div class="card-title" style="margin-bottom: 12px; color: var(--accent-secondary);">X-Draft Workstation</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">선택한 글감 목록</label>
+                        <input type="text" id="selected-post-title" class="input-text" readonly placeholder="위 테이블에서 변환할 글감들을 왼쪽 체크박스로 선택하세요.">
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="form-label" style="margin-bottom: 0;">변환 양식 (Form)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btn-edit-form" class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(255,255,255,0.05);" onclick="toggleEditMode('form', event)">편집</button>
+                                <button class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4);" onclick="addNewPreset('form', event)">➕ 추가</button>
+                            </div>
+                        </div>
+                        <div class="option-grid" id="form-options" style="margin-bottom: 0;">
+                            <!-- JS 동적 렌더링 -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="form-label" style="margin-bottom: 0;">적용 스타일 (Style)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btn-edit-style" class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(255,255,255,0.05);" onclick="toggleEditMode('style', event)">편집</button>
+                                <button class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4);" onclick="addNewPreset('style', event)">➕ 추가</button>
+                            </div>
+                        </div>
+                        <div class="option-grid" id="style-options" style="margin-bottom: 0;">
+                            <!-- JS 동적 렌더링 -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">에디터 추가 지시사항</label>
+                        <input type="text" id="extra-instruction" class="input-text" placeholder="예: 마지막에 위트있는 질문 추가, 시니컬한 종결">
+                    </div>
+
+                    <button class="btn" id="btn-generate" onclick="generateDraftX()" style="margin-bottom: 20px;">Qwen 콘텐츠 초안 변환 생성</button>
+
+                    <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 20px 0;">
+
+                    <!-- AI 이미지/동영상 프롬프트 생성 워크플레이스 (왼쪽 하단으로 완벽 이동 및 다이내믹 프리셋 적용) -->
+                    <div class="image-prompt-section" style="padding-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="card-title" style="color: var(--accent-primary); margin-bottom: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 4px;">
+                                    🎨 AI <span id="prompt-mode-title">Image</span> Workstation
+                                </div>
+                                <!-- 이미지/동영상 변경 토글 스위치 -->
+                                <div style="display: inline-flex; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border); border-radius: 20px; padding: 2px;">
+                                    <button id="toggle-prompt-img" class="tab-btn active" style="margin: 0; border: 0; padding: 3px 10px; font-size: 10px; font-weight: bold; border-radius: 15px; height: 22px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center;" onclick="setPromptMode('image', event)">이미지</button>
+                                    <button id="toggle-prompt-vid" class="tab-btn" style="margin: 0; border: 0; padding: 3px 10px; font-size: 10px; font-weight: bold; border-radius: 15px; height: 22px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center;" onclick="setPromptMode('video', event)">동영상</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btn-edit-theme" class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(255,255,255,0.05);" onclick="toggleEditMode('theme', event)">편집</button>
+                                <button class="tab-btn" style="padding: 2px 8px; font-size: 11px; background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);" onclick="addNewPreset('theme', event)">➕ 추가</button>
+                            </div>
+                        </div>
+                        <div class="option-grid" id="theme-options" style="margin-bottom: 10px;">
+                            <!-- JS 동적 렌더링 -->
+                        </div>
+                        <button class="btn btn-secondary" id="btn-gen-img" onclick="generateImgPrompt()" style="margin-bottom: 10px; padding: 8px 12px; font-size: 12px; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); color: var(--text-primary);">Midjourney / DALL-E 이미지 프롬프트 빌드</button>
+                        
+                        <div class="preview-box" id="image-prompt-output" style="height: 60px; min-height: 60px; padding: 8px; font-size: 11px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow-y: auto;">
+                            <span style="color: var(--text-secondary);">초안 생성 완료 후 이 버튼을 누르면 AI 전용 영문 이미지 프롬프트를 자동으로 조각해 줍니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 프리뷰 영역 (우측 컬럼 전체 높이로 완벽 확장) -->
+            <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0; padding: 24px; height: 100%;">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <span>X 게시글 초안 실시간 프리뷰</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btn-copy-draft" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="copyDraftToClipboard()">📋 복사</button>
+                        <button id="btn-save-obsidian" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="saveDraftToObsidian()">💾 옵시디언 저장</button>
+                    </div>
+                </div>
+                <div class="preview-box" id="preview-output" style="flex: 1; height: 100%; min-height: 520px; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto;">
+                    <div class="preview-placeholder" style="margin: auto 0;">
+                        <div style="font-size: 32px;">📝</div>
+                        <div>변환 설정을 완료한 후<br>'콘텐츠 초안 변환 생성' 버튼을 클릭하세요.</div>
+                    </div>
+                </div>
+            </div>
+    </div>
+    <!-- 프리셋 편집/추가 대형 모달 (내용까지 크게 편집 가능) -->
+    <div id="preset-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <h3 id="modal-title" style="margin-bottom: 20px; color: var(--accent-secondary); font-size: 16px; font-weight: 600;">프리셋 설정</h3>
+            <input type="hidden" id="modal-type">
+            <input type="hidden" id="modal-key">
+            
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">프리셋 이름 (제목)</label>
+                <input type="text" id="modal-preset-name" class="input-text" placeholder="예: 현실공감 독백형">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">상세 지시 프롬프트 (내용)</label>
+                <textarea id="modal-preset-desc" class="input-text" rows="8" style="resize: vertical; font-family: inherit; line-height: 1.6;" placeholder="AI에게 주입할 상세 지시 프롬프트 또는 템플릿 내용을 입력하세요."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" style="width: auto; margin-top: 0; padding: 8px 16px; font-size: 13px;" onclick="closePresetModal()">취소</button>
+                <button class="btn" style="width: auto; padding: 8px 20px; font-size: 13px;" onclick="submitPresetModal()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 개별 글감 직접 추가 대형 모달 -->
+    <div id="manual-post-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 650px;">
+            <h3 style="margin-bottom: 20px; color: var(--accent-primary); font-size: 16px; font-weight: 600;">✍️ 수동 글감(원문) 직접 추가</h3>
+            
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">글감 제목</label>
+                <input type="text" id="manual-title" class="input-text" placeholder="예: [IT 트렌드] 생성형 AI 시대의 생존 전략">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label class="form-label">글감 출처 분류</label>
+                    <select id="manual-source" class="input-text" style="height: 38px; background-color: #0b0f19;">
+                        <option value="manual">직접 입력 (외부)</option>
+                        <option value="geeknews">GeekNews (긱뉴스)</option>
+                        <option value="nate">네이트판</option>
+                        <option value="nate_news">네이트뉴스</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">원문 링크 (URL - 선택)</label>
+                    <input type="text" id="manual-url" class="input-text" placeholder="https://example.com/article">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">본문 원문 내용</label>
+                <textarea id="manual-content" class="input-text" rows="10" style="resize: vertical; font-family: inherit; line-height: 1.6;" placeholder="수집하고자 하는 원문의 전체 내용 또는 본문 핵심 내용을 입력하세요."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" style="width: auto; margin-top: 0; padding: 8px 16px; font-size: 13px;" onclick="closeManualPostModal()">취소</button>
+                <button class="btn" style="width: auto; padding: 8px 20px; font-size: 13px;" onclick="submitManualPost()">글감 데이터베이스 등록</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPostIds = [];
+        let allPostsData = [];
+        let currentSourceFilter = "all";
+        let chartInstance = null;
+        let selectedTheme = "character";
+        let latestGeneratedDraft = "";
+
+        // Presets dynamic state
+        let presetForms = {};
+        let presetStyles = {};
+        let presetThemes = {};
+        let selectedFormId = "1";
+        let selectedStyleIds = ["2"];
+        let selectedThemeId = "1";
+        let editMode = { form: false, style: false, theme: false };
+
+        // 초기 로드
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchStats();
+            fetchPosts();
+            fetchPresets();
+        });
+
+        // 0. 프리셋 로딩 및 렌더링
+        function fetchPresets() {
+            return fetch("/api/presets")
+                .then(r => r.json())
+                .then(data => {
+                    presetForms = data.forms;
+                    presetStyles = data.styles;
+                    presetThemes = data.themes;
+                    renderPresetOptions();
+                    updateDetailsPane();
+                });
+        }
+
+        function renderPresetOptions() {
+            // Render Forms
+            const formContainer = document.getElementById("form-options");
+            formContainer.innerHTML = "";
+            Object.keys(presetForms).forEach(key => {
+                const item = presetForms[key];
+                const isSelected = (selectedFormId === key);
+                const card = document.createElement("div");
+                card.className = `option-card ${isSelected ? 'selected' : ''}`;
+                card.style.position = "relative";
+                card.style.display = "flex";
+                card.style.justifyContent = "space-between";
+                card.style.alignItems = "center";
+                card.style.paddingRight = "10px";
+                card.onclick = (e) => {
+                    if (editMode.form) return;
+                    selectForm(key);
+                };
+
+                let editControls = "";
+                if (editMode.form) {
+                    editControls = `
+                        <div style="display: flex; gap: 8px; z-index: 10;">
+                            <span style="cursor: pointer; font-size: 13px;" title="수정" onclick="editPresetItem('form', '${key}', event)">✏️</span>
+                            <span style="cursor: pointer; font-size: 13px;" title="삭제" onclick="deletePresetItem('form', '${key}', event)">❌</span>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <input type="radio" name="form_choice" id="form-${key}" value="${key}" ${isSelected ? 'checked' : ''} style="pointer-events: none;">
+                        <span style="font-weight: 500; pointer-events: none;">${item[0]}</span>
+                    </div>
+                    ${editControls}
+                `;
+                formContainer.appendChild(card);
+            });
+
+            // Render Styles
+            const styleContainer = document.getElementById("style-options");
+            styleContainer.innerHTML = "";
+            Object.keys(presetStyles).forEach(key => {
+                const item = presetStyles[key];
+                const isSelected = selectedStyleIds.includes(key);
+                const card = document.createElement("div");
+                card.className = `option-card ${isSelected ? 'selected' : ''}`;
+                card.style.position = "relative";
+                card.style.display = "flex";
+                card.style.justifyContent = "space-between";
+                card.style.alignItems = "center";
+                card.style.paddingRight = "10px";
+                card.onclick = (e) => {
+                    if (editMode.style) return;
+                    toggleStyle(key);
+                };
+
+                let editControls = "";
+                if (editMode.style) {
+                    editControls = `
+                        <div style="display: flex; gap: 8px; z-index: 10;">
+                            <span style="cursor: pointer; font-size: 13px;" title="수정" onclick="editPresetItem('style', '${key}', event)">✏️</span>
+                            <span style="cursor: pointer; font-size: 13px;" title="삭제" onclick="deletePresetItem('style', '${key}', event)">❌</span>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <input type="checkbox" name="style_choice" id="style-${key}" value="${key}" ${isSelected ? 'checked' : ''} style="pointer-events: none;">
+                        <span style="font-weight: 500; pointer-events: none;">${item[0]}</span>
+                    </div>
+                    ${editControls}
+                `;
+                styleContainer.appendChild(card);
+            });
+
+            // Render Themes (이미지 테마 동적 렌더링)
+            const themeContainer = document.getElementById("theme-options");
+            themeContainer.innerHTML = "";
+            Object.keys(presetThemes).forEach(key => {
+                const item = presetThemes[key];
+                const isSelected = (selectedThemeId === key);
+                const card = document.createElement("div");
+                card.className = `option-card ${isSelected ? 'selected' : ''}`;
+                card.style.position = "relative";
+                card.style.display = "flex";
+                card.style.justifyContent = "space-between";
+                card.style.alignItems = "center";
+                card.style.paddingRight = "10px";
+                card.onclick = (e) => {
+                    if (editMode.theme) return;
+                    selectTheme(key);
+                };
+
+                let editControls = "";
+                if (editMode.theme) {
+                    editControls = `
+                        <div style="display: flex; gap: 8px; z-index: 10;">
+                            <span style="cursor: pointer; font-size: 13px;" title="수정" onclick="editPresetItem('theme', '${key}', event)">✏️</span>
+                            <span style="cursor: pointer; font-size: 13px;" title="삭제" onclick="deletePresetItem('theme', '${key}', event)">❌</span>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <input type="radio" name="theme_choice" id="theme-${key}" value="${key}" ${isSelected ? 'checked' : ''} style="pointer-events: none;">
+                        <span style="font-weight: 500; pointer-events: none;">${item[0]}</span>
+                    </div>
+                    ${editControls}
+                `;
+                themeContainer.appendChild(card);
+            });
+        }
+
+        // 1. 통계 데이터 호출 및 차트 렌더링
+        function fetchStats() {
+            fetch("/api/stats")
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById("stats-total").innerText = data.total;
+                    
+                    const ctx = document.getElementById('sourceChart').getContext('2d');
+                    if (chartInstance) {
+                        chartInstance.destroy();
+                    }
+                    
+                    chartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['네이트판', '랭킹뉴스', 'GeekNews'],
+                            datasets: [{
+                                data: [data.nate_count, data.news_count, data.geek_count],
+                                backgroundColor: ['#ef4444', '#3b82f6', '#10b981'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: '#9ca3af', font: { size: 11 } }
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        // 2. 글감 DB 테이블 호출
+        function fetchPosts() {
+            fetch("/api/posts")
+                .then(r => r.json())
+                .then(posts => {
+                    allPostsData = posts;
+                    renderFilteredTable();
+                });
+        }
+
+        // 3. 필터링 로직 구현 (날짜 및 소스 복합 필터)
+        function filterSource(source) {
+            currentSourceFilter = source;
+            document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+            document.getElementById(`tab-${source}`).classList.add("active");
+            renderFilteredTable();
+        }
+
+        function applyFilters() {
+            renderFilteredTable();
+        }
+
+        function resetFilters() {
+            document.getElementById("date-filter-select").value = "";
+            filterSource("all");
+        }
+
+        function renderFilteredTable() {
+            const dateVal = document.getElementById("date-filter-select").value;
+            const tbody = document.getElementById("posts-table-body");
+            tbody.innerHTML = "";
+
+            const filtered = allPostsData.filter(post => {
+                const matchesSource = (currentSourceFilter === "all" || post.source === currentSourceFilter);
+                const matchesDate = (!dateVal || post.date === dateVal);
+                return matchesSource && matchesDate;
+            });
+
+            filtered.forEach(post => {
+                const tr = document.createElement("tr");
+                
+                let badgeClass = "badge-nate";
+                let srcKr = "네이트판";
+                if (post.source === "nate_news") {
+                    badgeClass = "badge-news";
+                    srcKr = "네이트뉴스";
+                } else if (post.source === "geeknews") {
+                    badgeClass = "badge-geek";
+                    srcKr = "긱뉴스";
+                } else if (post.source === "manual") {
+                    badgeClass = "badge-manual";
+                    srcKr = "직접 입력";
+                }
+
+                const isChecked = selectedPostIds.includes(post.id) ? "checked" : "";
+                
+                tr.innerHTML = `
+                    <td style="text-align: center;"><input type="checkbox" id="chk-${post.id}" ${isChecked} onchange="handleCheckboxChange('${post.id}', '${post.title.replace(/'/g, "\\'")}')"></td>
+                    <td>${post.id}</td>
+                    <td><span class="badge ${badgeClass}">${srcKr}</span></td>
+                    <td style="color: var(--text-secondary);">${post.date}</td>
+                    <td style="font-weight: 500; cursor: pointer;" onclick="toggleRowCheckbox('${post.id}')">${post.title}</td>
+                    <td style="text-align: center;">
+                        <div style="display: flex; justify-content: center; gap: 6px; align-items: center;">
+                            <a href="${post.url}" target="_blank" style="color: var(--accent-primary); text-decoration: none; font-size: 11px; font-weight: 600; padding: 4px 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();">
+                                🔗 원문
+                            </a>
+                            <a href="/api/view-file?path=${encodeURIComponent(post.file_path)}" target="_blank" style="color: var(--accent-secondary); text-decoration: none; font-size: 11px; font-weight: 600; padding: 4px 8px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();">
+                                📄 파일 보기
+                            </a>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 3번 요구사항: 다중 글감 선택 핸들러
+        function handleCheckboxChange(postId, title) {
+            const chk = document.getElementById(`chk-${postId}`);
+            if (chk.checked) {
+                if (!selectedPostIds.includes(postId)) {
+                    selectedPostIds.push(postId);
+                }
+            } else {
+                selectedPostIds = selectedPostIds.filter(id => id !== postId);
+            }
+            updateSelectedTitlesDisplay();
+        }
+
+        function toggleRowCheckbox(postId) {
+            const chk = document.getElementById(`chk-${postId}`);
+            if (chk) {
+                chk.checked = !chk.checked;
+                chk.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function updateSelectedTitlesDisplay() {
+            const titleInput = document.getElementById("selected-post-title");
+            if (selectedPostIds.length === 0) {
+                titleInput.value = "";
+                return;
+            }
+            
+            const selectedPosts = allPostsData.filter(p => selectedPostIds.includes(p.id));
+            titleInput.value = `[선택 글감 ${selectedPosts.length}건] ` + selectedPosts.map(p => p.title).join(", ");
+        }
+
+        // 4번, 5번 요구사항: 대화형 Form/Style 추가 제어 및 실시간 상세 보기
+        function selectForm(id) {
+            selectedFormId = id;
+            document.querySelectorAll("#form-options .option-card").forEach(el => el.classList.remove("selected"));
+            const targetRadio = document.getElementById(`form-${id}`);
+            if (targetRadio) {
+                targetRadio.checked = true;
+                // input -> div (flex wrapper) -> option-card
+                let card = targetRadio.closest(".option-card");
+                if (card) card.classList.add("selected");
+            }
+            showOptionDetails("form", id);
+        }
+
+        function toggleStyle(id) {
+            const targetChk = document.getElementById(`style-${id}`);
+            if (!targetChk) return;
+            targetChk.checked = !targetChk.checked;
+            
+            let card = targetChk.closest(".option-card");
+            if (targetChk.checked) {
+                if (!selectedStyleIds.includes(id)) {
+                    selectedStyleIds.push(id);
+                }
+                if (card) card.classList.add("selected");
+            } else {
+                selectedStyleIds = selectedStyleIds.filter(sid => sid !== id);
+                if (card) card.classList.remove("selected");
+            }
+            showOptionDetails("style", id);
+        }
+
+        function selectTheme(id) {
+            selectedThemeId = id;
+            document.querySelectorAll("#theme-options .option-card").forEach(el => el.classList.remove("selected"));
+            const targetRadio = document.getElementById(`theme-${id}`);
+            if (targetRadio) {
+                targetRadio.checked = true;
+                // input -> div (flex wrapper) -> option-card
+                let card = targetRadio.closest(".option-card");
+                if (card) card.classList.add("selected");
+            }
+            updateDetailsPane();
+        }
+
+        // 2번 요구사항: 양식 상세와 스타일 상세를 각각 독립적으로 2개 카드에 실시간 갱신하는 로직
+        function showOptionDetails(type, id) {
+            updateDetailsPane();
+        }
+
+        function updateDetailsPane() {
+            // 1. 변환 양식 (FORM) 업데이트
+            const formItem = presetForms[selectedFormId];
+            if (formItem) {
+                document.getElementById("form-detail-name").innerText = formItem[0];
+                document.getElementById("form-detail-desc").innerText = formItem[1];
+            } else {
+                document.getElementById("form-detail-name").innerText = "선택된 양식 없음";
+                document.getElementById("form-detail-desc").innerText = "양식 카드를 선택해 주세요.";
+            }
+
+            // 2. 적용 스타일 (STYLE) 업데이트 (다중 선택 대응)
+            if (selectedStyleIds.length === 0) {
+                document.getElementById("style-detail-name").innerText = "선택된 스타일 없음";
+                document.getElementById("style-detail-desc").innerText = "스타일 카드를 클릭하여 선택하세요. (중복 선택 가능)";
+            } else {
+                const names = [];
+                const descs = [];
+                selectedStyleIds.forEach(sid => {
+                    const item = presetStyles[sid];
+                    if (item) {
+                        names.push(item[0]);
+                        descs.push(`🔸 [${item[0]}]\n${item[1]}`);
+                    }
+                });
+                document.getElementById("style-detail-name").innerText = names.join(", ");
+                document.getElementById("style-detail-desc").innerText = descs.join("\n\n");
+            }
+
+            // 3. 이미지 테마 (THEME) 업데이트 (신규 추가 요구사항)
+            const themeItem = presetThemes[selectedThemeId];
+            if (themeItem) {
+                document.getElementById("theme-detail-name").innerText = themeItem[0];
+                document.getElementById("theme-detail-desc").innerText = themeItem[1];
+            } else {
+                document.getElementById("theme-detail-name").innerText = "선택된 테마 없음";
+                document.getElementById("theme-detail-desc").innerText = "테마 카드를 선택해 주세요.";
+            }
+        }
+
+        // 프리셋 편집 제어 로직
+        function toggleEditMode(type, event) {
+            if (event) event.stopPropagation();
+            editMode[type] = !editMode[type];
+            
+            const btn = document.getElementById(`btn-edit-${type}`);
+            if (editMode[type]) {
+                btn.innerText = "완료";
+                btn.style.background = "var(--warn-color)";
+                btn.style.borderColor = "var(--warn-color)";
+            } else {
+                btn.innerText = "편집";
+                btn.style.background = "rgba(255,255,255,0.05)";
+                btn.style.borderColor = "var(--card-border)";
+            }
+            renderPresetOptions();
+        }
+
+        // 3번 요구사항: prompt 대신 대형 모달창을 띄워 이름과 상세 프롬프트(내용)를 함께 편집/추가
+        function openPresetModal(mode, type, key = "") {
+            document.getElementById("preset-modal").style.display = "flex";
+            document.getElementById("modal-type").value = type;
+            document.getElementById("modal-key").value = key;
+            
+            const titleEl = document.getElementById("modal-title");
+            const nameInput = document.getElementById("modal-preset-name");
+            const descInput = document.getElementById("modal-preset-desc");
+            
+            if (mode === "add") {
+                let typeName = type === 'form' ? '변환 양식' : (type === 'style' ? '적용 스타일' : '이미지 테마');
+                titleEl.innerText = `➕ 새로운 ${typeName} 프리셋 추가`;
+                nameInput.value = "";
+                descInput.value = "";
+            } else {
+                const item = type === 'form' ? presetForms[key] : (type === 'style' ? presetStyles[key] : presetThemes[key]);
+                let typeName = type === 'form' ? '변환 양식' : (type === 'style' ? '적용 스타일' : '이미지 테마');
+                titleEl.innerText = `✏️ ${typeName} 프리셋 수정`;
+                nameInput.value = item ? item[0] : "";
+                descInput.value = item ? item[1] : "";
+            }
+        }
+
+        function closePresetModal() {
+            document.getElementById("preset-modal").style.display = "none";
+        }
+
+        function submitPresetModal() {
+            const type = document.getElementById("modal-type").value;
+            const key = document.getElementById("modal-key").value;
+            const name = document.getElementById("modal-preset-name").value.trim();
+            const desc = document.getElementById("modal-preset-desc").value.trim();
+            
+            if (!name || !desc) {
+                alert("제목과 내용을 모두 채워주세요!");
+                return;
+            }
+            
+            const id = key ? key : String(Date.now());
+            const payload = { id: id, name: name, desc: desc };
+            
+            fetch(`/api/presets/${type}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === "success") {
+                    closePresetModal();
+                    fetchPresets();
+                } else {
+                    alert("저장에 실패했습니다.");
+                }
+            })
+            .catch(err => alert("오류 발생: " + err));
+        }
+
+        function addNewPreset(type, event) {
+            if (event) event.stopPropagation();
+            openPresetModal("add", type);
+        }
+
+        function editPresetItem(type, key, event) {
+            if (event) event.stopPropagation();
+            openPresetModal("edit", type, key);
+        }
+
+        function deletePresetItem(type, key, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("정말 이 프리셋을 삭제하시겠습니까?")) return;
+            
+            fetch(`/api/presets/${type}/${key}`, {
+                method: "DELETE"
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === "success") {
+                    fetchPresets();
+                    // 만약 현재 삭제된 것이 사이드바 디테일에 선택되어 있었다면 숨김
+                    document.getElementById("option-details-card").style.display = "none";
+                } else {
+                    alert("프리셋 삭제 실패");
+                }
+            })
+            .catch(err => alert("에러: " + err));
+        }
+
+
+
+        // 수집 기동
+        function triggerCollection(source) {
+            const btn = document.getElementById("btn-collect-all");
+            btn.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; gap: 8px;"><div class="loader"></div>수집 중...</div>`;
+            btn.disabled = true;
+
+            fetch("/api/collect", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ limit: 10, source: source })
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert(`통합 수집 성공!\n후보 글감: ${data.crawled}개 탐색 완료\n신규 DB 적재: ${data.added}개 (중복 필터링 작동)`);
+                fetchStats();
+                fetchPosts();
+            })
+            .catch(e => alert("크롤링 중 에러 발생: " + e))
+            .finally(() => {
+                btn.innerHTML = "통합 자동 수집 실행";
+                btn.disabled = false;
+            });
+        }
+
+        // X 초안 최종 다중 결합 생성
+        function generateDraftX() {
+            if (selectedPostIds.length === 0) {
+                alert("글감 테이블에서 변환할 글감을 최소 1개 이상 체크박스로 선택해 주세요!");
+                return;
+            }
+
+            const form_choice = document.querySelector('input[name="form_choice"]:checked').value;
+            const style_choices = Array.from(document.querySelectorAll('input[name="style_choice"]:checked')).map(el => el.value);
+            const extra_instruction = document.getElementById("extra-instruction").value;
+
+            const preview = document.getElementById("preview-output");
+            
+            // 저장/복사 버튼 임시 비활성화
+            const initCopyBtn = document.getElementById("btn-copy-draft");
+            initCopyBtn.disabled = true;
+            initCopyBtn.style.opacity = "0.5";
+            initCopyBtn.style.cursor = "not-allowed";
+            initCopyBtn.style.background = "rgba(59, 130, 246, 0.1)";
+            initCopyBtn.style.borderColor = "rgba(59, 130, 246, 0.2)";
+            initCopyBtn.style.color = "var(--text-secondary)";
+
+            const initSaveBtn = document.getElementById("btn-save-obsidian");
+            initSaveBtn.disabled = true;
+            initSaveBtn.style.opacity = "0.5";
+            initSaveBtn.style.cursor = "not-allowed";
+            initSaveBtn.style.background = "rgba(16, 185, 129, 0.1)";
+            initSaveBtn.style.borderColor = "rgba(16, 185, 129, 0.2)";
+            initSaveBtn.style.color = "var(--text-secondary)";
+            
+            preview.innerHTML = `
+                <div class="preview-placeholder">
+                    <div class="loader"></div>
+                    <div style="margin-top: 10px;">Qwen 인텔리전스 결합 변환 중...<br>완성 후 복사 및 저장 버튼이 활성화됩니다.</div>
+                </div>
+            `;
+
+            fetch("/api/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    post_ids: selectedPostIds,
+                    form_choice: form_choice,
+                    style_choices: style_choices,
+                    extra_instruction: extra_instruction
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.draft) {
+                    latestGeneratedDraft = data.draft; // 이미지 생성을 위해 임시보관
+                    let modeText = data.is_offline ? "⚠️ [Template Generator 오프라인 모드 작동]" : "⚡ [로컬 Qwen AI 모델 생성 성공]";
+                    preview.innerHTML = `
+<div style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--accent-secondary); font-weight: 600; margin-bottom: 12px; display: inline-block;">${modeText}</div>
+<div style="font-weight: 500; font-size: 14px; margin-bottom: 20px; color: #f3f4f6; white-space: pre-wrap; line-height: 1.8;">${data.draft}</div>
+                    `;
+                    // 저장 및 복사 버튼 활성화
+                    const copyBtn = document.getElementById("btn-copy-draft");
+                    copyBtn.disabled = false;
+                    copyBtn.style.background = "rgba(59, 130, 246, 0.2)";
+                    copyBtn.style.borderColor = "rgba(59, 130, 246, 0.4)";
+                    copyBtn.style.color = "var(--accent-primary)";
+                    copyBtn.style.cursor = "pointer";
+                    copyBtn.style.opacity = "1";
+
+                    const saveBtn = document.getElementById("btn-save-obsidian");
+                    saveBtn.disabled = false;
+                    saveBtn.style.background = "rgba(16, 185, 129, 0.2)";
+                    saveBtn.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                    saveBtn.style.color = "var(--success-color)";
+                    saveBtn.style.cursor = "pointer";
+                    saveBtn.style.opacity = "1";
+                    saveBtn.innerHTML = "💾 옵시디언 저장";
+                }
+            })
+            .catch(e => {
+                preview.innerHTML = `
+                    <div class="preview-placeholder" style="color: #ef4444;">
+                        <div>❌</div>
+                        <div>초안 생성 실패: ${e}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // 클립보드 초안 복사 기능
+        function copyDraftToClipboard() {
+            if (!latestGeneratedDraft) {
+                alert("복사할 초안이 존재하지 않습니다!");
+                return;
+            }
+            navigator.clipboard.writeText(latestGeneratedDraft)
+                .then(() => {
+                    const copyBtn = document.getElementById("btn-copy-draft");
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = "✅ 복사 완료";
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    alert("클립보드 복사 실패: " + err);
+                });
+        }
+
+        // 사이드바 디테일 카드 접기/열기 기능
+        function toggleCardCollapse(cardId) {
+            const body = document.getElementById(`body-${cardId}`);
+            const icon = document.getElementById(`icon-${cardId}`);
+            if (body.style.display === "none") {
+                body.style.display = "block";
+                icon.style.transform = "rotate(0deg)";
+            } else {
+                body.style.display = "none";
+                icon.style.transform = "rotate(-90deg)";
+            }
+        }
+
+        // 옵시디언 vault 수동 저장
+        function saveDraftToObsidian() {
+            if (!latestGeneratedDraft) {
+                alert("저장할 초안이 존재하지 않습니다!");
+                return;
+            }
+
+            const form_choice = document.querySelector('input[name="form_choice"]:checked').value;
+            const style_choices = Array.from(document.querySelectorAll('input[name="style_choice"]:checked')).map(el => el.value);
+            const btn = document.getElementById("btn-save-obsidian");
+            
+            btn.innerHTML = "⏳ 저장 중...";
+            btn.disabled = true;
+
+            fetch("/api/save-draft", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    draft_text: latestGeneratedDraft,
+                    post_ids: selectedPostIds,
+                    form_choice: form_choice,
+                    style_choices: style_choices
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(`💾 옵시디언 vault에 최종 저장 완료!\n경로: ${data.saved_path}`);
+                    btn.innerHTML = "✅ 저장 완료";
+                } else {
+                    alert("저장에 실패했습니다.");
+                    btn.innerHTML = "💾 옵시디언 저장";
+                    btn.disabled = false;
+                }
+            })
+            .catch(e => {
+                alert("저장 오류: " + e);
+                btn.innerHTML = "💾 옵시디언 저장";
+                btn.disabled = false;
+            });
+        }
+
+        // 이미지/동영상 프롬프트 모드 제어 전역 변수
+        let selectedPromptMode = "image";
+
+        function setPromptMode(mode, event) {
+            if (event) event.stopPropagation();
+            selectedPromptMode = mode;
+            
+            // 토글 버튼 클래스 제어
+            document.getElementById("toggle-prompt-img").classList.remove("active");
+            document.getElementById("toggle-prompt-vid").classList.remove("active");
+            if (mode === "image") {
+                document.getElementById("toggle-prompt-img").classList.add("active");
+                document.getElementById("prompt-mode-title").innerText = "Image";
+                document.getElementById("btn-gen-img").innerText = "Midjourney / DALL-E 이미지 프롬프트 빌드";
+            } else {
+                document.getElementById("toggle-prompt-vid").classList.add("active");
+                document.getElementById("prompt-mode-title").innerText = "Video";
+                document.getElementById("btn-gen-img").innerText = "Luma / Runway 동영상 프롬프트 빌드";
+            }
+            
+            // 프리뷰 문구 초기화
+            document.getElementById("image-prompt-output").innerHTML = `
+                <span style="color: var(--text-secondary);">초안 생성 완료 후 이 버튼을 누르면 AI 전용 영문 ${mode === 'image' ? '이미지' : '동영상'} 프롬프트를 자동으로 조각해 줍니다.</span>
+            `;
+        }
+
+        // 6번 요구사항: 이미지 생성 프롬프트 생성 요청
+        function generateImgPrompt() {
+            // 초안이 없으면 선택된 글감의 제목을 기반으로 생성하도록 허용
+            let targetText = latestGeneratedDraft;
+            if (!targetText) {
+                if (selectedPostIds.length > 0) {
+                    const selectedPosts = allPostsData.filter(p => selectedPostIds.includes(p.id));
+                    if (selectedPosts.length > 0) {
+                        targetText = "[글감 원본 제목]: " + selectedPosts.map(p => p.title).join(", ");
+                    }
+                }
+            }
+
+            if (!targetText) {
+                alert("프롬프트를 조각하려면 먼저 글감 목록에서 글감을 선택(체크)하거나 초안을 생성해 주세요!");
+                return;
+            }
+
+            const imgOutput = document.getElementById("image-prompt-output");
+            imgOutput.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="loader" style="width:16px; height:16px;"></div><span style="margin-left: 8px;">프롬프트 조각 중...</span></div>`;
+
+            fetch("/api/generate-image-prompt", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    draft_text: targetText,
+                    theme_type: selectedThemeId,
+                    prompt_mode: selectedPromptMode // 이미지/동영상 모드 전송
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === "success") {
+                    imgOutput.innerHTML = `
+                        <div style="font-weight: 600; color: var(--accent-primary); margin-bottom: 4px;">클릭하여 자동 복사:</div>
+                        <code style="cursor: pointer; display: block; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-family: monospace; word-break: break-all;" onclick="navigator.clipboard.writeText(this.innerText); alert('클립보드에 복사 완료!');">${data.prompt}</code>
+                    `;
+                }
+            })
+            .catch(e => {
+                imgOutput.innerText = "프롬프트 생성 에러: " + e;
+            });
+        }
+
+        // 수동 글감 입력 모달 관련 JS 제어
+        function openManualPostModal() {
+            document.getElementById("manual-post-modal").style.display = "flex";
+            document.getElementById("manual-title").value = "";
+            document.getElementById("manual-url").value = "";
+            document.getElementById("manual-content").value = "";
+            document.getElementById("manual-source").value = "manual";
+        }
+
+        function closeManualPostModal() {
+            document.getElementById("manual-post-modal").style.display = "none";
+        }
+
+        function submitManualPost() {
+            const title = document.getElementById("manual-title").value.trim();
+            const source = document.getElementById("manual-source").value;
+            const url = document.getElementById("manual-url").value.trim();
+            const content = document.getElementById("manual-content").value.trim();
+
+            if (!title || !content) {
+                alert("글감 제목과 본문 내용은 반드시 입력해야 합니다!");
+                return;
+            }
+
+            const payload = {
+                title: title,
+                source: source,
+                content: content,
+                url: url ? url : ""
+            };
+
+            fetch("/api/posts/manual", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(r => {
+                if (!r.ok) {
+                    return r.json().then(err => { throw new Error(err.detail || "등록 실패"); });
+                }
+                return r.json();
+            })
+            .then(res => {
+                if (res.status === "success") {
+                    alert("✍️ 개별 글감이 단일 통합 데이터베이스 및 옵시디언 보관소에 성공적으로 등록되었습니다!");
+                    closeManualPostModal();
+                    fetchStats();
+                    fetchPosts();
+                }
+            })
+            .catch(err => {
+                alert("수동 글감 등록 실패: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>
