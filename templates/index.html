@@ -539,7 +539,7 @@
                                 <th style="width: 50px; text-align: center;">선택</th>
                                 <th style="width: 70px;">ID</th>
                                 <th style="width: 120px;">출처</th>
-                                <th style="width: 120px;">수집일</th>
+                                <th style="width: 120px; cursor: pointer; user-select: none;" onclick="toggleDateSort()">수집일 <span id="sort-arrow">🔽</span></th>
                                 <th>글 제목</th>
                                 <th style="width: 200px; text-align: center;">원문/파일</th>
                             </tr>
@@ -635,7 +635,7 @@
                         <input type="text" id="extra-instruction" class="input-text" placeholder="예: 마지막에 위트있는 질문 추가, 시니컬한 종결">
                     </div>
 
-                    <button class="btn" id="btn-generate" onclick="generateDraftX()" style="margin-bottom: 20px;">Trends_Copy 초안 변환 생성</button>
+                    <button class="btn" id="btn-generate" onclick="generateDraft()" style="margin-bottom: 20px;">Trends_Copy 초안 변환 생성</button>
 
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 20px 0;">
 
@@ -677,6 +677,12 @@
                         <button id="btn-copy-draft" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="copyDraftToClipboard()">📋 복사</button>
                         <button id="btn-save-obsidian" class="tab-btn" style="padding: 4px 12px; font-size: 11px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: var(--text-secondary); font-weight: 700; cursor: not-allowed; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px;" disabled onclick="saveDraftToObsidian()">💾 옵시디언 저장</button>
                     </div>
+                </div>
+                <!-- 상단 상태 표시줄 (타이틀 바로 아래 배치) -->
+                <div id="preview-status-footer" style="margin-bottom: 12px; display: none; align-items: center; justify-content: flex-start;">
+                     <div id="preview-status-header" style="padding: 4px 10px; font-size: 11px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 6px; color: var(--accent-secondary); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                         <span class="loader" style="width:10px; height:10px; border-width:2px; display:inline-block;"></span> 대기 중...
+                     </div>
                 </div>
                 <div class="preview-box" id="preview-output" style="flex: 1; height: 100%; min-height: 520px; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto;">
                     <div class="preview-placeholder" style="margin: auto 0;">
@@ -755,6 +761,7 @@
         let chartInstance = null;
         let selectedTheme = "character";
         let latestGeneratedDraft = "";
+        let dateSortOrder = "desc"; // 기본값: 최근 수집순 (desc)
 
         // Presets dynamic state
         let presetForms = {};
@@ -964,6 +971,15 @@
             filterSource("all");
         }
 
+        function toggleDateSort() {
+            dateSortOrder = (dateSortOrder === "desc") ? "asc" : "desc";
+            const arrow = document.getElementById("sort-arrow");
+            if (arrow) {
+                arrow.innerText = (dateSortOrder === "desc") ? "🔽" : "🔼";
+            }
+            renderFilteredTable();
+        }
+
         function renderFilteredTable() {
             const dateVal = document.getElementById("date-filter-select").value;
             const tbody = document.getElementById("posts-table-body");
@@ -973,6 +989,18 @@
                 const matchesSource = (currentSourceFilter === "all" || post.source === currentSourceFilter);
                 const matchesDate = (!dateVal || post.date === dateVal);
                 return matchesSource && matchesDate;
+            });
+
+            // 날짜 및 ID 기준 정렬 적용
+            filtered.sort((a, b) => {
+                const dateA = a.date || "";
+                const dateB = b.date || "";
+                if (dateA !== dateB) {
+                    return (dateSortOrder === "desc") ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+                }
+                const idA = parseInt(a.id) || 0;
+                const idB = parseInt(b.id) || 0;
+                return (dateSortOrder === "desc") ? idB - idA : idA - idB;
             });
 
             filtered.forEach(post => {
@@ -994,7 +1022,7 @@
                 const isChecked = selectedPostIds.includes(post.id) ? "checked" : "";
                 
                 tr.innerHTML = `
-                    <td style="text-align: center;"><input type="checkbox" id="chk-${post.id}" ${isChecked} onchange="handleCheckboxChange('${post.id}', '${post.title.replace(/'/g, "\\'")}')"></td>
+                    <td style="text-align: center;"><input type="checkbox" id="chk-${post.id}" ${isChecked} onchange="handleCheckboxChange('${post.id}')"></td>
                     <td>${post.id}</td>
                     <td><span class="badge ${badgeClass}">${srcKr}</span></td>
                     <td style="color: var(--text-secondary);">${post.date}</td>
@@ -1015,7 +1043,7 @@
         }
 
         // 3번 요구사항: 다중 글감 선택 핸들러
-        function handleCheckboxChange(postId, title) {
+        function handleCheckboxChange(postId) {
             const chk = document.getElementById(`chk-${postId}`);
             if (chk.checked) {
                 if (!selectedPostIds.includes(postId)) {
@@ -1269,8 +1297,8 @@
             });
         }
 
-        // X 초안 최종 다중 결합 생성
-        function generateDraftX() {
+        // 콘텐츠 초안 최종 다중 결합 생성
+        function generateDraft() {
             if (selectedPostIds.length === 0) {
                 alert("글감 테이블에서 변환할 글감을 최소 1개 이상 체크박스로 선택해 주세요!");
                 return;
@@ -1299,12 +1327,30 @@
             initSaveBtn.style.borderColor = "rgba(16, 185, 129, 0.2)";
             initSaveBtn.style.color = "var(--text-secondary)";
             
+            // 하단 상태바 보이기 및 리셋
+            const statusFooter = document.getElementById("preview-status-footer");
+            const statusHeader = document.getElementById("preview-status-header");
+            if (statusFooter) statusFooter.style.display = "flex";
+            if (statusHeader) {
+                statusHeader.style.background = "rgba(139, 92, 246, 0.15)";
+                statusHeader.style.borderColor = "rgba(139, 92, 246, 0.3)";
+                statusHeader.style.color = "var(--accent-secondary)";
+                statusHeader.innerHTML = `<span class="loader" style="width:10px; height:10px; border-width:2px; display:inline-block; margin-right: 4px;"></span> 연결 대기 중...`;
+            }
+            
             preview.innerHTML = `
-                <div class="preview-placeholder">
+                <div class="preview-placeholder" id="preview-progress-container">
                     <div class="loader"></div>
-                    <div style="margin-top: 10px;">Trends_Copy 인텔리전스 결합 변환 중...<br>완성 후 복사 및 저장 버튼이 활성화됩니다.</div>
+                    <div style="margin-top: 15px; font-weight: 500; font-size: 13px;" id="preview-progress-msg">Trends_Copy 인텔리전스 결합 변환 시작...</div>
+                    <div style="margin-top: 10px; font-size: 11px; color: var(--text-secondary); max-width: 400px; line-height: 1.5;" id="preview-sub-msg">로컬 AI 작동을 점검하고 있습니다. 잠시만 대기해 주세요.</div>
+                </div>
+                <div id="preview-stream-content" style="display:none; text-align: left;">
+                    <div id="preview-text-area" style="font-weight: 500; font-size: 14px; margin-bottom: 20px; color: #f3f4f6; white-space: pre-wrap; line-height: 1.8;"></div>
                 </div>
             `;
+
+            let streamText = "";
+            let streamReasoning = "";
 
             fetch("/api/generate", {
                 method: "POST",
@@ -1316,39 +1362,128 @@
                     extra_instruction: extra_instruction
                 })
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.draft) {
-                    latestGeneratedDraft = data.draft; // 이미지 생성을 위해 임시보관
-                    let modeText = data.is_offline ? "⚠️ [Template Generator 오프라인 모드 작동]" : "⚡ [로컬 AI 모델 생성 성공]";
-                    preview.innerHTML = `
-<div style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--accent-secondary); font-weight: 600; margin-bottom: 12px; display: inline-block;">${modeText}</div>
-<div style="font-weight: 500; font-size: 14px; margin-bottom: 20px; color: #f3f4f6; white-space: pre-wrap; line-height: 1.8;">${data.draft}</div>
-                    `;
-                    // 저장 및 복사 버튼 활성화
-                    const copyBtn = document.getElementById("btn-copy-draft");
-                    copyBtn.disabled = false;
-                    copyBtn.style.background = "rgba(59, 130, 246, 0.2)";
-                    copyBtn.style.borderColor = "rgba(59, 130, 246, 0.4)";
-                    copyBtn.style.color = "var(--accent-primary)";
-                    copyBtn.style.cursor = "pointer";
-                    copyBtn.style.opacity = "1";
-
-                    const saveBtn = document.getElementById("btn-save-obsidian");
-                    saveBtn.disabled = false;
-                    saveBtn.style.background = "rgba(16, 185, 129, 0.2)";
-                    saveBtn.style.borderColor = "rgba(16, 185, 129, 0.4)";
-                    saveBtn.style.color = "var(--success-color)";
-                    saveBtn.style.cursor = "pointer";
-                    saveBtn.style.opacity = "1";
-                    saveBtn.innerHTML = "💾 저장";
+            .then(response => {
+                if (!response.body) {
+                    throw new Error("ReadableStream not supported or empty body.");
                 }
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                function readChunk() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
+                            return;
+                        }
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop(); // save incomplete line
+
+                        lines.forEach(line => {
+                            if (!line.trim()) return;
+                            try {
+                                const data = JSON.parse(line);
+                                if (data.status === "progress") {
+                                    const progressMsg = document.getElementById("preview-progress-msg");
+                                    const statusHeader = document.getElementById("preview-status-header");
+                                    
+                                    if (progressMsg) progressMsg.innerText = data.message;
+                                    if (statusHeader) statusHeader.innerHTML = `<span class="loader" style="width:10px; height:10px; border-width:2px; display:inline-block; margin-right: 4px;"></span> ${data.message}`;
+                                    
+                                    // 작성 중으로 진입하면 placeholder 숨기고 텍스트 영역 표시
+                                    if (data.message.includes("[3/4]")) {
+                                        const progressContainer = document.getElementById("preview-progress-container");
+                                        const streamContent = document.getElementById("preview-stream-content");
+                                        if (progressContainer) progressContainer.style.display = "none";
+                                        if (streamContent) streamContent.style.display = "block";
+                                    }
+                                } else if (data.status === "reasoning") {
+                                    const progressContainer = document.getElementById("preview-progress-container");
+                                    const streamContent = document.getElementById("preview-stream-content");
+                                    
+                                    if (progressContainer) progressContainer.style.display = "none";
+                                    if (streamContent) streamContent.style.display = "block";
+                                    
+                                    streamReasoning += data.text;
+                                    // 사용자 화면에는 출력하지 않고 백그라운드 변수(streamReasoning)에만 누적
+                                } else if (data.status === "rewrite") {
+                                    const textArea = document.getElementById("preview-text-area");
+                                    const progressContainer = document.getElementById("preview-progress-container");
+                                    const streamContent = document.getElementById("preview-stream-content");
+                                    
+                                    if (progressContainer) progressContainer.style.display = "none";
+                                    if (streamContent) streamContent.style.display = "block";
+                                    
+                                    streamText = data.text;
+                                    if (textArea) textArea.innerText = streamText;
+                                    preview.scrollTop = preview.scrollHeight;
+                                } else if (data.status === "content") {
+                                    const textArea = document.getElementById("preview-text-area");
+                                    const progressContainer = document.getElementById("preview-progress-container");
+                                    const streamContent = document.getElementById("preview-stream-content");
+                                    
+                                    if (progressContainer) progressContainer.style.display = "none";
+                                    if (streamContent) streamContent.style.display = "block";
+                                    
+                                    streamText += data.text;
+                                    if (textArea) textArea.innerText = streamText;
+                                    preview.scrollTop = preview.scrollHeight;
+                                } else if (data.status === "done") {
+                                    latestGeneratedDraft = data.draft; // 이미지 생성을 위해 임시보관
+                                    
+                                    const progressContainer = document.getElementById("preview-progress-container");
+                                    const streamContent = document.getElementById("preview-stream-content");
+                                    if (progressContainer) progressContainer.style.display = "none";
+                                    if (streamContent) streamContent.style.display = "block";
+                                    
+                                    // 헤더 완료 메시지 업데이트
+                                    const statusHeader = document.getElementById("preview-status-header");
+                                    if (statusHeader) {
+                                        let modeText = data.is_offline ? "⚠️ [Template Generator 오프라인 모드 작동]" : "⚡ [로컬 AI 모델 생성 완료]";
+                                        statusHeader.innerHTML = modeText;
+                                        statusHeader.style.background = "rgba(16, 185, 129, 0.15)";
+                                        statusHeader.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                                        statusHeader.style.color = "var(--success-color)";
+                                    }
+                                    
+                                    // 최종 텍스트 보정 출력
+                                    const textArea = document.getElementById("preview-text-area");
+                                    if (textArea) textArea.innerText = data.draft;
+                                    
+                                    // 저장 및 복사 버튼 활성화
+                                    const copyBtn = document.getElementById("btn-copy-draft");
+                                    copyBtn.disabled = false;
+                                    copyBtn.style.background = "rgba(59, 130, 246, 0.2)";
+                                    copyBtn.style.borderColor = "rgba(59, 130, 246, 0.4)";
+                                    copyBtn.style.color = "var(--accent-primary)";
+                                    copyBtn.style.cursor = "pointer";
+                                    copyBtn.style.opacity = "1";
+
+                                    const saveBtn = document.getElementById("btn-save-obsidian");
+                                    saveBtn.disabled = false;
+                                    saveBtn.style.background = "rgba(16, 185, 129, 0.2)";
+                                    saveBtn.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                                    saveBtn.style.color = "var(--success-color)";
+                                    saveBtn.style.cursor = "pointer";
+                                    saveBtn.style.opacity = "1";
+                                    saveBtn.innerHTML = "💾 저장";
+                                }
+                            } catch (e) {
+                                console.error("Error parsing stream line:", line, e);
+                            }
+                        });
+
+                        return readChunk();
+                    });
+                }
+
+                return readChunk();
             })
             .catch(e => {
                 preview.innerHTML = `
                     <div class="preview-placeholder" style="color: #ef4444;">
                         <div>❌</div>
-                        <div>초안 생성 실패: ${e}</div>
+                        <div>초안 생성 실패: ${e.message || e}</div>
                     </div>
                 `;
             });
