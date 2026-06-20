@@ -2907,12 +2907,12 @@
             const cleanedText = rawText.replace(/：/g, ':');
             const lines = cleanedText.split('\n');
 
-            // 1. 제목 및 코멘트 추출 (전체 라인 대상 Key-Value 매칭 - 매우 안정적)
+            // 1. 제목 및 코멘트 추출 (Key-Value 매칭)
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (line.includes(':')) {
                     const idx = line.indexOf(':');
-                    const key = line.substring(0, idx).replace(/[*_\s-#\[\]]/g, '').trim();
+                    const key = line.substring(0, idx).replace(/[*_\s\-#\[\]]/g, '').trim();
                     const val = line.substring(idx + 1).trim();
                     
                     if (key.includes('게시글제목') || key === '제목' || key === 'title') {
@@ -2930,7 +2930,8 @@
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                
+                if (!line) continue;
+
                 // 이미지용 앞글 (끊기) 시작점 찾기
                 if (bodyStartIdx === -1 && (line.includes('이미지용 앞글') || line.includes('끊기'))) {
                     bodyStartIdx = i;
@@ -2939,60 +2940,72 @@
                 if (replyStartIdx === -1 && (line.includes('답글용 리얼 본글') || line.includes('답글용 본글') || line.includes('리얼 본글'))) {
                     replyStartIdx = i;
                 }
-                // 키워드 시작점 찾기 (리스트 아이템 제외하고 헤더 형태인 것만)
-                if (keywordsStartIdx === -1 && 
-                    (line.includes('추천 이미지') || line.includes('서칭 키워드') || line.includes('검색 키워드') || line.includes('키워드')) && 
-                    (line.startsWith('#') || line.includes('[') || !line.includes(':'))) {
+                // 키워드 시작점 찾기 (리스트 아이템 제외, 키워드 헤더만 매칭)
+                const isKeywordHeader = (line.includes('추천 이미지') || line.includes('서칭 키워드') || line.includes('검색 키워드') || line.includes('추천 키워드') || line.includes('이미지 키워드')) ||
+                                        ((line.startsWith('#') || line.startsWith('[')) && line.includes('키워드'));
+                if (keywordsStartIdx === -1 && isKeywordHeader && !line.startsWith('*') && !line.startsWith('-')) {
                     keywordsStartIdx = i;
                 }
             }
 
-            // 3. 각 섹션 내용 파싱
+            // 3. 섹션 내용 추출 (다음 헤더나 구분선을 만날 때까지 수집)
+            const isHeaderOrSeparator = (line) => {
+                const l = line.trim();
+                if (l.startsWith('---')) return true;
+                if (l.startsWith('###')) return true;
+                if (l.startsWith('[') && l.endsWith(']')) return true;
+                if ((l.includes('답글 트윗') || l.includes('추천 이미지') || l.includes('서칭 키워드')) && (l.startsWith('#') || l.startsWith('[') || l.startsWith('*') === false)) {
+                    return true;
+                }
+                return false;
+            };
+
             let textLines = [];
             if (bodyStartIdx !== -1) {
-                let start = bodyStartIdx + 1;
-                for (let i = start; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    // 다음 주요 섹션 헤더나 구분선을 만나면 종료
-                    if (line.startsWith('---') || line.startsWith('###') || line.includes('답글 트윗') || line.includes('답글용') || line.includes('추천 이미지') || line.includes('서칭 키워드')) {
-                        break;
-                    }
-                    // 제목이나 코멘트가 또 나오면 스킵
-                    if (line.includes(':')) {
-                        const idx = line.indexOf(':');
-                        const key = line.substring(0, idx).replace(/[*_\s-#\[\]]/g, '').trim();
+                for (let i = bodyStartIdx + 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (isHeaderOrSeparator(line)) break;
+                    
+                    const trimmed = line.trim();
+                    if (trimmed.includes(':')) {
+                        const idx = trimmed.indexOf(':');
+                        const key = trimmed.substring(0, idx).replace(/[*_\s\-#\[\]]/g, '').trim();
                         if (key.includes('게시글제목') || key === '제목' || key === 'title') continue;
                         if (key.includes('게시글코멘트') || key === '코멘트' || key === 'comment') continue;
+                        if (key.includes('이미지용앞글') || key.includes('끊기')) continue;
                     }
-                    if (line.includes('이미지용 앞글') && line.includes(':')) continue;
-
-                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
+                    
+                    let cleanLine = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
                     if (cleanLine) textLines.push(cleanLine);
                 }
             }
 
             let replyLines = [];
             if (replyStartIdx !== -1) {
-                let start = replyStartIdx + 1;
-                for (let i = start; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.startsWith('---') || line.startsWith('###') || line.includes('추천 이미지') || line.includes('서칭 키워드')) {
-                        break;
+                for (let i = replyStartIdx + 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (isHeaderOrSeparator(line)) break;
+                    
+                    const trimmed = line.trim();
+                    if (trimmed.includes(':')) {
+                        const idx = trimmed.indexOf(':');
+                        const key = trimmed.substring(0, idx).replace(/[*_\s\-#\[\]]/g, '').trim();
+                        if (key.includes('답글용리얼본글') || key.includes('답글용본글') || key.includes('리얼본글')) continue;
                     }
-                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
+
+                    let cleanLine = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
                     if (cleanLine) replyLines.push(cleanLine);
                 }
             }
 
             let keywordLines = [];
             if (keywordsStartIdx !== -1) {
-                let start = keywordsStartIdx + 1;
-                for (let i = start; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.startsWith('---') || line.startsWith('###')) {
-                        break;
-                    }
-                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
+                for (let i = keywordsStartIdx + 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (isHeaderOrSeparator(line)) break;
+                    
+                    const trimmed = line.trim();
+                    let cleanLine = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
                     if (cleanLine) keywordLines.push(cleanLine);
                 }
             }
