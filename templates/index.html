@@ -428,7 +428,7 @@
 
         /* 글감 리스트 테이블 */
         .post-list-container {
-            max-height: 380px;
+            max-height: 600px;
             overflow-y: auto;
             border: 1px solid var(--card-border);
             border-radius: 12px;
@@ -904,51 +904,6 @@
             <!-- 상단 오른쪽: 필터바 및 데이터베이스 테이블 영역 -->
             <div class="db-area"
                 style="display: flex; flex-direction: column; gap: 20px; justify-content: space-between; height: 100%;">
-                <!-- 날짜 & 카테고리 필터 바 -->
-                <div class="filter-bar" style="margin-bottom: 0;">
-                    <div class="tab-group" style="flex-wrap: wrap;">
-                        <button class="tab-btn active" id="tab-all" onclick="filterSource('all')">전체</button>
-                        <button class="tab-btn" id="tab-manual" onclick="filterSource('manual')">직접입력</button>
-                        <button class="tab-btn" id="tab-nate" onclick="filterSource('nate')">네이트판</button>
-                        <button class="tab-btn" id="tab-nate_news" onclick="filterSource('nate_news')">네이트뉴스</button>
-                        <button class="tab-btn" id="tab-geeknews" onclick="filterSource('geeknews')">긱뉴스</button>
-                        <button class="tab-btn" id="tab-shinsia" onclick="filterSource('shinsia')">신시아블로그</button>
-                        <button class="tab-btn" id="tab-theqoo" onclick="filterSource('theqoo')">더쿠</button>
-                        <button class="tab-btn" id="tab-inssider_lounge"
-                            onclick="filterSource('inssider_lounge')">인싸이더(라운지)</button>
-                        <button class="tab-btn" id="tab-inssider_couple"
-                            onclick="filterSource('inssider_couple')">인싸이더(연애)</button>
-                        <button class="tab-btn" id="tab-inssider_job"
-                            onclick="filterSource('inssider_job')">인싸이더(직장)</button>
-                        <button class="tab-btn" id="tab-inssider_politics"
-                            onclick="filterSource('inssider_politics')">인싸이더(정치)</button>
-                        <button class="tab-btn" id="tab-inssider_humor"
-                            onclick="filterSource('inssider_humor')">인싸이더(유머)</button>
-                        <button class="tab-btn" id="tab-hn_hot" onclick="filterSource('hn_hot')">HN Hot</button>
-                        <button class="tab-btn" id="tab-hn_best" onclick="filterSource('hn_best')">HN Best</button>
-                        <button class="tab-btn" id="tab-yahoo_jp" onclick="filterSource('yahoo_jp')">Yahoo
-                            Japan</button>
-                    </div>
-                    <div class="date-selector">
-                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">수집일 필터:</span>
-                        <div class="custom-dropdown" id="date-dropdown"
-                            style="width: 140px; display: inline-block; vertical-align: middle;">
-                            <div class="custom-dropdown-btn" id="date-dropdown-btn" onclick="toggleDateDropdown(event)"
-                                style="padding: 5px 10px; font-size: 11px;">
-                                <span id="date-dropdown-label">전체 날짜</span>
-                                <span class="arrow">▼</span>
-                            </div>
-                            <div class="custom-dropdown-menu" id="date-dropdown-menu" style="max-height: 250px;">
-                                <div class="custom-dropdown-item active" data-value=""
-                                    onclick="selectDateItem(this, '')">전체
-                                    날짜</div>
-                            </div>
-                        </div>
-                        <button class="tab-btn" style="background: rgba(255,255,255,0.05); margin-left: 8px;"
-                            onclick="resetFilters()">초기화</button>
-                    </div>
-                </div>
-
                 <!-- 실시간 DB 테이블 -->
                 <div class="card"
                     style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
@@ -957,10 +912,9 @@
                         <span>실시간 수집 글감 데이터베이스 (다중 병합 지원)</span>
 
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                            <!-- Source Filter Dropdown -->
+                            <!-- 출처 필터 (3번) -->
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span
-                                    style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">출처:</span>
+                                <span style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">출처:</span>
                                 <div class="custom-dropdown" id="source-dropdown" style="width: 140px;">
                                     <div class="custom-dropdown-btn" id="source-dropdown-btn"
                                         onclick="toggleSourceDropdown(event)"
@@ -1021,12 +975,29 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 수집일 필터 (4번) -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">수집일:</span>
+                                <div class="custom-dropdown" id="date-dropdown" style="width: 140px;">
+                                    <div class="custom-dropdown-btn" id="date-dropdown-btn" onclick="toggleDateDropdown(event)"
+                                        style="padding: 5px 10px; font-size: 11px;">
+                                        <span id="date-dropdown-label">전체 날짜</span>
+                                        <span class="arrow">▼</span>
+                                    </div>
+                                    <div class="custom-dropdown-menu" id="date-dropdown-menu" style="max-height: 250px;">
+                                        <div class="custom-dropdown-item active" data-value=""
+                                            onclick="selectDateItem(this, '')">전체 날짜</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button class="tab-btn"
                                 style="background: rgba(255,255,255,0.05); margin: 0; padding: 5px 12px; font-size: 11px; border-radius: 6px;"
                                 onclick="resetFilters()">초기화</button>
                         </div>
                     </div>
-                    <div class="post-list-container" style="flex: 1; max-height: 390px;">
+                    <div class="post-list-container" style="flex: 1; max-height: 600px;">
                         <table>
                             <thead>
                                 <tr>
