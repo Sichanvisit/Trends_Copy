@@ -1022,19 +1022,22 @@
             </div>
         </div>
 
-    <!-- 하단 영역: 워크플레이스 및 디테일 보드 (워크스테이션 상단 높이 자동 정렬) -->
-    <div class="container lower-container" id="lower-container"
-        style="margin-top: 20px; margin-bottom: 20px; padding-top: 0;">
+        <!-- 💻 Trends_Copy 콘텐츠 변환 워크스테이션 & 라이브러리 관리 (접이식) -->
+    <div class="container" style="max-width: 100%; width: 100%; margin: 20px auto 0 auto; padding-top: 0; display: block; padding-bottom: 0;">
+        <div class="card" id="workstation-master-card" style="border-color: rgba(139, 92, 246, 0.3); background: rgba(15, 23, 42, 0.4); padding: 16px 20px; margin-bottom: 0;">
+            <div class="card-title" id="workstation-master-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; user-select: none;" onclick="toggleWorkstationMaster()">
+                <span style="font-size: 15px; font-weight: 700; color: var(--accent-secondary); display: flex; align-items: center; gap: 8px;">
+                    💻 Trends_Copy 워크스테이션 & 예시 라이브러리
+                </span>
+                <span id="workstation-master-toggle-icon" style="font-size: 15px; color: var(--text-secondary); transition: transform 0.3s ease; transform: rotate(0deg);">▼</span>
+            </div>
+            
+            <div id="workstation-master-content" style="display: none; margin-top: 20px; flex-direction: column; gap: 20px;">
+                <!-- 하단 영역: 워크플레이스 및 디테일 보드 (워크스테이션 상단 높이 자동 정렬) -->
+    <div class="lower-container" id="lower-container" style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; margin-top: 0;">
         <!-- 하단 왼쪽: 선택된 폼 및 스타일의 실시간 프롬프트 카드 (워크스테이션과 탑라인 완벽 정렬) -->
         <div class="sidebar-lower" style="display: flex; flex-direction: column; gap: 15px;">
-            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: -5px;"
-                id="sidebar-toggle-container">
-                <button class="tab-btn"
-                    style="padding: 4px 10px; font-size: 11px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); border-radius: 6px; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;"
-                    onclick="toggleDetailsSidebar()">
-                    ◀ 상세정보 접기
-                </button>
-            </div>
+            
 
             <div class="card" id="form-details-card"
                 style="border-color: rgba(139, 92, 246, 0.2); background: linear-gradient(135deg, rgba(139, 92, 246, 0.02), transparent); margin-bottom: 0;">
@@ -1097,9 +1100,7 @@
                     <div class="card-title"
                         style="margin-bottom: 12px; color: var(--accent-secondary); display: flex; justify-content: space-between; align-items: center;">
                         <span>Trends_Copy Workstation</span>
-                        <button id="btn-expand-sidebar" class="tab-btn"
-                            style="display: none; padding: 4px 10px; font-size: 11px; background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4);"
-                            onclick="toggleDetailsSidebar()">▶ 상세정보 펼치기</button>
+                        
                     </div>
 
                     <div class="form-group">
@@ -1234,22 +1235,7 @@
             </div>
         </div>
     </div>
-
-    <!-- 🛠️ 고급 도구 및 라이브러리 관리 영역 (접이식) -->
-    <div class="container"
-        style="max-width: 100%; width: 100%; margin: 20px auto 20px auto; padding-top: 0; display: block;">
-        <div class="card" id="advanced-tools-card"
-            style="border-color: rgba(139, 92, 246, 0.3); background: rgba(15, 23, 42, 0.4); padding: 24px;">
-            <div class="card-title" id="advanced-tools-header"
-                style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; user-select: none;"
-                onclick="toggleAdvancedTools()">
-                <span style="font-size: 16px; font-weight: 700; color: var(--accent-secondary); display: flex; align-items: center; gap: 8px;">
-                    🛠️ 고급 편집 및 라이브러리 관리 도구 (X Style Dataset & 카드뉴스 수동 생성기)
-                </span>
-                <span id="advanced-tools-toggle-icon" style="font-size: 16px; color: var(--text-secondary); transition: transform 0.3s ease; transform: rotate(0deg);">▼</span>
-            </div>
-            
-            <div id="advanced-tools-content" style="display: none; margin-top: 24px; flex-direction: column; gap: 20px;">
+                
                 <!-- 예시 라이브러리 (Style Dataset) 관리 영역 -->
                 <div class="card"
                     style="border-color: rgba(139, 92, 246, 0.2); background: radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.05), transparent), var(--card-bg); margin: 0;">
@@ -1282,8 +1268,26 @@
                 <!-- JS로 동적 렌더링 -->
             </div>
         </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- 💬 카드뉴스 수동 생성기 영역 (탭 전환) -->
+<!-- 🛠️ 고급 도구 및 라이브러리 관리 영역 (접이식) -->
+    <div class="container"
+        style="max-width: 100%; width: 100%; margin: 20px auto 20px auto; padding-top: 0; display: block;">
+        <div class="card" id="advanced-tools-card"
+            style="border-color: rgba(59, 130, 246, 0.3); background: rgba(15, 23, 42, 0.4); padding: 24px;">
+            <div class="card-title" id="advanced-tools-header"
+                style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; user-select: none;"
+                onclick="toggleAdvancedTools()">
+                <span style="font-size: 16px; font-weight: 700; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
+                    💬 카드뉴스 수동 생성기 (Card Image Creator)
+                </span>
+                <span id="advanced-tools-toggle-icon" style="font-size: 16px; color: var(--text-secondary); transition: transform 0.3s ease; transform: rotate(0deg);">▼</span>
+            </div>
+            
+            <div id="advanced-tools-content" style="display: none; margin-top: 24px; flex-direction: column; gap: 20px;">
+                <!-- 💬 카드뉴스 수동 생성기 영역 (탭 전환) -->
         <div class="card" id="manual-card-generator-section"
             style="border-color: rgba(59, 130, 246, 0.2); background: radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.05), transparent), var(--card-bg); margin: 0;">
             <div class="card-title"
@@ -1859,7 +1863,23 @@
                 }
             }
 
-            // Restore advanced tools collapsed state
+                        // Restore workstation master collapsed state (default to collapsed)
+            const wsCollapsed = localStorage.getItem("workstation_master_collapsed");
+            const wsContent = document.getElementById("workstation-master-content");
+            const wsIcon = document.getElementById("workstation-master-toggle-icon");
+            const wsHeader = document.getElementById("workstation-master-header");
+            
+            if (wsCollapsed === "false") {
+                if (wsContent) wsContent.style.display = "flex";
+                if (wsIcon) wsIcon.style.transform = "rotate(180deg)";
+                if (wsHeader) wsHeader.style.marginBottom = "20px";
+            } else {
+                if (wsContent) wsContent.style.display = "none";
+                if (wsIcon) wsIcon.style.transform = "rotate(0deg)";
+                if (wsHeader) wsHeader.style.marginBottom = "0";
+            }
+
+// Restore advanced tools collapsed state
             const advancedCollapsed = localStorage.getItem("advanced_tools_collapsed");
             const advancedContent = document.getElementById("advanced-tools-content");
             const advancedIcon = document.getElementById("advanced-tools-toggle-icon");
@@ -1888,19 +1908,7 @@
             });
         });
 
-        function toggleDetailsSidebar() {
-            const container = document.getElementById("lower-container");
-            const expandBtn = document.getElementById("btn-expand-sidebar");
-            const isCollapsed = container.classList.toggle("collapsed");
-
-            if (isCollapsed) {
-                if (expandBtn) expandBtn.style.display = "inline-block";
-                localStorage.setItem("sidebarCollapsed", "true");
-            } else {
-                if (expandBtn) expandBtn.style.display = "none";
-                localStorage.setItem("sidebarCollapsed", "false");
-            }
-        }
+        
 
         // ======= 커스텀 드롭다운 함수 =======
         function toggleDateDropdown(event) {
@@ -3832,6 +3840,25 @@
                 icon.style.transform = "rotate(0deg)";
                 header.style.marginBottom = "0";
                 localStorage.setItem("advanced_tools_collapsed", "true");
+            }
+        }
+
+        // 워크스테이션 마스터 영역 접기/펼치기
+        function toggleWorkstationMaster() {
+            const content = document.getElementById("workstation-master-content");
+            const icon = document.getElementById("workstation-master-toggle-icon");
+            const header = document.getElementById("workstation-master-header");
+
+            if (content.style.display === "none" || content.style.display === "") {
+                content.style.display = "flex";
+                icon.style.transform = "rotate(180deg)";
+                header.style.marginBottom = "20px";
+                localStorage.setItem("workstation_master_collapsed", "false");
+            } else {
+                content.style.display = "none";
+                icon.style.transform = "rotate(0deg)";
+                header.style.marginBottom = "0";
+                localStorage.setItem("workstation_master_collapsed", "true");
             }
         }
 
