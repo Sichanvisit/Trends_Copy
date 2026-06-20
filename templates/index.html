@@ -2904,81 +2904,102 @@
             let reply = "";
             let keywords = "";
 
-            // 전각 콜론(：)을 반각 콜론(:)으로 통일하여 파싱 실패 방지
             const cleanedText = rawText.replace(/：/g, ':');
             const lines = cleanedText.split('\n');
-            let currentSection = "";
-            let textLines = [];
-            let replyLines = [];
-            let keywordLines = [];
+
+            // 1. 제목 및 코멘트 추출 (전체 라인 대상 Key-Value 매칭 - 매우 안정적)
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.includes(':')) {
+                    const idx = line.indexOf(':');
+                    const key = line.substring(0, idx).replace(/[*_\s-#\[\]]/g, '').trim();
+                    const val = line.substring(idx + 1).trim();
+                    
+                    if (key.includes('게시글제목') || key === '제목' || key === 'title') {
+                        title = val;
+                    } else if (key.includes('게시글코멘트') || key === '코멘트' || key === 'comment') {
+                        comment = val;
+                    }
+                }
+            }
+
+            // 2. 인덱스 기반 섹션 시작점 찾기
+            let bodyStartIdx = -1;
+            let replyStartIdx = -1;
+            let keywordsStartIdx = -1;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if (!line) continue;
-
-                // 유연한 섹션 매칭 규칙
-                if (line.includes('첫 번째 트윗') || line.includes('첫번째 트윗')) {
-                    currentSection = "first_tweet";
-                    continue;
-                } else if (line.includes('답글 트윗') || line.includes('답글용 리얼 본글') || line.includes('답글')) {
-                    currentSection = "reply_tweet";
-                    continue;
-                } else if (line.includes('추천 이미지') || line.includes('서칭 키워드') || line.includes('키워드') || line.includes('검색어') || line.includes('검색 키워드')) {
-                    currentSection = "keywords";
-                    const idx = line.indexOf(':');
-                    if (idx !== -1) {
-                        let cleanLine = line.substring(idx + 1).replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
-                        if (cleanLine) keywordLines.push(cleanLine);
-                    }
-                    continue;
+                
+                // 이미지용 앞글 (끊기) 시작점 찾기
+                if (bodyStartIdx === -1 && (line.includes('이미지용 앞글') || line.includes('끊기'))) {
+                    bodyStartIdx = i;
                 }
+                // 답글용 리얼 본글 시작점 찾기
+                if (replyStartIdx === -1 && (line.includes('답글용 리얼 본글') || line.includes('답글용 본글') || line.includes('리얼 본글'))) {
+                    replyStartIdx = i;
+                }
+                // 키워드 시작점 찾기 (리스트 아이템 제외하고 헤더 형태인 것만)
+                if (keywordsStartIdx === -1 && 
+                    (line.includes('추천 이미지') || line.includes('서칭 키워드') || line.includes('검색 키워드') || line.includes('키워드')) && 
+                    (line.startsWith('#') || line.includes('[') || !line.includes(':'))) {
+                    keywordsStartIdx = i;
+                }
+            }
 
-                if (currentSection === "first_tweet") {
-                    if (line.includes('제목')) {
+            // 3. 각 섹션 내용 파싱
+            let textLines = [];
+            if (bodyStartIdx !== -1) {
+                let start = bodyStartIdx + 1;
+                for (let i = start; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    // 다음 주요 섹션 헤더나 구분선을 만나면 종료
+                    if (line.startsWith('---') || line.startsWith('###') || line.includes('답글 트윗') || line.includes('답글용') || line.includes('추천 이미지') || line.includes('서칭 키워드')) {
+                        break;
+                    }
+                    // 제목이나 코멘트가 또 나오면 스킵
+                    if (line.includes(':')) {
                         const idx = line.indexOf(':');
-                        if (idx !== -1) title = line.substring(idx + 1).trim();
-                    } else if (line.includes('코멘트')) {
-                        const idx = line.indexOf(':');
-                        if (idx !== -1) comment = line.substring(idx + 1).trim();
-                    } else if (line.includes('이미지용 앞글')) {
-                        currentSection = "first_tweet_text";
+                        const key = line.substring(0, idx).replace(/[*_\s-#\[\]]/g, '').trim();
+                        if (key.includes('게시글제목') || key === '제목' || key === 'title') continue;
+                        if (key.includes('게시글코멘트') || key === '코멘트' || key === 'comment') continue;
                     }
-                } else if (currentSection === "first_tweet_text") {
+                    if (line.includes('이미지용 앞글') && line.includes(':')) continue;
+
+                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
+                    if (cleanLine) textLines.push(cleanLine);
+                }
+            }
+
+            let replyLines = [];
+            if (replyStartIdx !== -1) {
+                let start = replyStartIdx + 1;
+                for (let i = start; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith('---') || line.startsWith('###') || line.includes('추천 이미지') || line.includes('서칭 키워드')) {
+                        break;
+                    }
+                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
+                    if (cleanLine) replyLines.push(cleanLine);
+                }
+            }
+
+            let keywordLines = [];
+            if (keywordsStartIdx !== -1) {
+                let start = keywordsStartIdx + 1;
+                for (let i = start; i < lines.length; i++) {
+                    const line = lines[i].trim();
                     if (line.startsWith('---') || line.startsWith('###')) {
-                        currentSection = "";
-                        i--;
-                    } else {
-                        let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
-                        if (cleanLine) textLines.push(cleanLine);
+                        break;
                     }
-                } else if (currentSection === "reply_tweet") {
-                    if (line.includes('답글용 리얼 본글')) {
-                        currentSection = "reply_tweet_text";
-                    } else if (!line.startsWith('---') && !line.startsWith('###')) {
-                        let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
-                        if (cleanLine) replyLines.push(cleanLine);
-                    }
-                } else if (currentSection === "reply_tweet_text") {
-                    if (line.startsWith('---') || line.startsWith('###')) {
-                        currentSection = "";
-                        i--;
-                    } else {
-                        let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').trim();
-                        if (cleanLine) replyLines.push(cleanLine);
-                    }
-                } else if (currentSection === "keywords") {
-                    if (!line.startsWith('---') && !line.startsWith('###')) {
-                        let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
-                        if (cleanLine) keywordLines.push(cleanLine);
-                    }
+                    let cleanLine = line.replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
+                    if (cleanLine) keywordLines.push(cleanLine);
                 }
             }
 
             const cleanMD = (txt) => {
                 if (!txt) return "";
                 let s = txt.trim();
-                
-                // 마크다운 흔적(bold, italic, quotes) 반복 스트립
                 while (true) {
                     let original = s;
                     if (s.startsWith('**') && s.endsWith('**')) {
