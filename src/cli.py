@@ -1,8 +1,8 @@
 import os
 import sys
 from datetime import datetime
-from config import GENERATED_DIR
-from src.crawler import crawl_nate_pann, crawl_nate_news, crawl_geeknews
+from config import RECONSTRUCTED_DIR
+from src.crawler import crawl_nate_pann, crawl_nate_news, crawl_geeknews, scrape_single_url, scrape_single_url
 from src.storage import load_content_index, add_posts_to_storage, sanitize_filename
 from src.generator import FORMS, STYLES, generate_draft
 
@@ -12,7 +12,7 @@ def clear_terminal():
 def print_header():
     print("=" * 60)
     print("        🚀 Trends_Copy (인텔리전스 워크벤치) 🚀        ")
-    print("   - 뉴스·커뮤니티 글감 자동 수집 및 X 초안 변환 워크스테이션 -   ")
+    print("   - 뉴스·커뮤니티 글감 자동 수집 및 콘텐츠 초안 변환 워크스테이션 -   ")
     print("=" * 60)
 
 def run_crawler_flow():
@@ -40,15 +40,15 @@ def run_crawler_flow():
     posts = []
     if choice in ["1", "4"]:
         print("\n[*] 네이트판 크롤링 시작...")
-        posts.extend(crawl_nate_pann(limit=5 if choice == "4" else limit))
+        posts.extend(crawl_nate_pann(limit=5 if choice == "4" else limit, include_content=False))
         
     if choice in ["2", "4"]:
         print("\n[*] 네이트 랭킹 뉴스 크롤링 시작...")
-        posts.extend(crawl_nate_news(limit=5 if choice == "4" else limit))
+        posts.extend(crawl_nate_news(limit=5 if choice == "4" else limit, include_content=False))
         
     if choice in ["3", "4"]:
         print("\n[*] GeekNews 크롤링 시작...")
-        posts.extend(crawl_geeknews(limit=5 if choice == "4" else limit))
+        posts.extend(crawl_geeknews(limit=5 if choice == "4" else limit, include_content=False))
         
     if not posts:
         print("[!] 새로운 글감을 하나도 찾지 못했거나 네트워크 오류가 발생했습니다.")
@@ -86,7 +86,7 @@ def run_generator_flow():
     if not index_list:
         return
         
-    post_id = input("\nX 초안으로 변환할 글감 ID 선택: ").strip()
+    post_id = input("\n콘텐츠 초안으로 변환할 글감 ID 선택: ").strip()
     selected_post = next((row for row in index_list if row["id"] == post_id), None)
     
     if not selected_post:
@@ -94,23 +94,25 @@ def run_generator_flow():
         input("\n[Enter]를 누르면 메인 메뉴로 돌아갑니다.")
         return
         
-    file_path = selected_post["file_path"]
-    if not os.path.exists(file_path):
-        from pathlib import Path
-        file_path = Path(file_path).resolve()
-        
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            markdown_content = f.read()
-    except Exception as e:
-        print(f"[!] 글감 카드를 불러올 수 없습니다: {e}")
-        input("\n[Enter]를 누르면 메인 메뉴로 돌아갑니다.")
-        return
-        
-    content_part = markdown_content
-    if "## 📌 원문 내용" in markdown_content:
-        content_part = markdown_content.split("## 📌 원문 내용")[-1].split("---")[0].strip()
-        
+    file_path = selected_post.get("file_path", "")
+    markdown_content = ""
+    if file_path and os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                markdown_content = f.read()
+        except Exception:
+            markdown_content = ""
+
+    content_part = ""
+    if markdown_content:
+        content_part = markdown_content
+        if "## 📌 원문 내용" in markdown_content:
+            content_part = markdown_content.split("## 📌 원문 내용")[-1].split("---")[0].strip()
+    if not content_part:
+        content_part = (selected_post.get("content") or "").strip()
+    if not content_part and selected_post.get("url"):
+        content_part = scrape_single_url(selected_post["url"]).get("content", "")
+
     # 1. 양식(Form) 선택
     print("\n" + "="*20 + " [STEP 1] 변환 양식(Form) 선택 " + "="*20)
     for k, (name, desc) in FORMS.items():
@@ -132,7 +134,7 @@ def run_generator_flow():
     print("\n" + "="*20 + " [STEP 3] 에디터 추가 지시사항 (선택사항) " + "="*20)
     extra_instruction = input("예: '마지막 문구는 냉소적으로', '현장감 있게 대화 유도' (없으면 Enter): ").strip()
     
-    print("\n[*] X 스타일 콘텐츠 초안 생성 파이프라인 가동 중...")
+    print("\n[*] 콘텐츠 초안 생성 파이프라인 가동 중...")
     
     # 초안 생성
     draft_text, is_offline = generate_draft(
@@ -144,20 +146,20 @@ def run_generator_flow():
     )
     
     # 4. 결과 출력
-    print("\n" + "=" * 25 + " 🎉 X 생성 초안 🎉 " + "=" * 25)
+    print("\n" + "=" * 25 + " 🎉 생성된 콘텐츠 초안 🎉 " + "=" * 25)
     print(draft_text)
     print("=" * 68)
     
     # 5. 초안 파일 저장
     today_str = datetime.now().strftime("%Y-%m-%d")
     safe_title = sanitize_filename(selected_post["title"])
-    draft_filename = f"{today_str}_{selected_post['source']}_{safe_title}_x_draft.md"
-    draft_path = GENERATED_DIR / draft_filename
+    draft_filename = f"{today_str}_{selected_post['source']}_{safe_title}_draft.md"
+    draft_path = RECONSTRUCTED_DIR / draft_filename
     
     form_name = FORMS[form_choice][0]
     style_names = ", ".join([STYLES[sc][0] for sc in style_choices])
     
-    full_draft_file_content = f"""# [X 초안 변환 카드] {selected_post['title']}
+    full_draft_file_content = f"""# [콘텐츠 초안 변환 카드] {selected_post['title']}
 
 - **원본 글감**: [{selected_post['title']}]({selected_post['url']})
 - **출처/일시**: {selected_post['source']} / {selected_post['date']}
@@ -168,17 +170,17 @@ def run_generator_flow():
 
 ---
 
-## 📝 X 게시글 초안 내용
+## 📝 콘텐츠 초안 내용
 
 {draft_text}
 
 ---
-*본 X 초안 카드는 Trends_Copy의 템플릿 변환 파이프라인으로 구축되었습니다.*
+*본 콘텐츠 초안 카드는 Trends_Copy의 템플릿 변환 파이프라인으로 구축되었습니다.*
 """
     try:
         with open(draft_path, "w", encoding="utf-8") as f:
             f.write(full_draft_file_content)
-        print(f"[+] 성공적으로 최종 X 초안 카드가 파일로 자동 정리 및 보존되었습니다.")
+        print(f"[+] 성공적으로 최종 콘텐츠 초안 카드가 파일로 자동 정리 및 보존되었습니다.")
         print(f"    경로: data/generated/{draft_filename}")
     except Exception as e:
         print(f"[!] 초안 파일 자동 정리 저장 중 에러 발생: {e}")
@@ -191,7 +193,7 @@ def main_menu_loop():
         print_header()
         print(" 1. 실시간 글감 수집 및 자동 정제 (Nate Pann / Nate News / GeekNews)")
         print(" 2. 수집된 글감 데이터베이스(Index DB) 조회 및 카드 열람")
-        print(" 3. 선택한 글감 -> X(Twitter) 맞춤형 초안 자동 변환")
+        print(" 3. 선택한 글감 -> 콘텐츠 맞춤형 초안 자동 변환")
         print(" 4. 프로그램 종료")
         print("=" * 60)
         

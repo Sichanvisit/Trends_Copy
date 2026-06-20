@@ -10,10 +10,10 @@ if __name__ == "__main__":
         import uvicorn
         import io
         
-        # Windows 한글 깨짐 방지 입출력 설정
+        # Windows 한글 깨짐 방지 입출력 설정 (버퍼링 방지를 위해 line_buffering=True 설정)
         if sys.platform.startswith('win'):
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
             
         print("=" * 60)
         print("   🌐 Trends_Copy - FastAPI 실시간 대시보드 기동 🌐")

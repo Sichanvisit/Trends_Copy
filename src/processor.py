@@ -2,12 +2,31 @@ import re
 
 def clean_content(text):
     """
-    본문 텍스트에서 광고 영역, 불필요한 공백, 저작권 문구, 댓글 잔재 등을 제거합니다.
+    본문 텍스트에서 광고 영역, 불필요한 공백, 저작권 문구, 댓글 잔재, 기자 이메일 이하 관련 뉴스 목록 등을 정밀 정제합니다.
     """
     if not text:
         return ""
         
-    # 광고 제거 패턴
+    cleaned = text
+
+    # 1. 기자 이메일 및 관련뉴스 이하 꼬리 전체 차단 패턴 (경향신문 등 포털 주요뉴스 제거)
+    cutoff_patterns = [
+        r"[가-힣]{2,4}\s*기자\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\s+[가-힣]{2,4}\s*기자",
+        r"[가-힣\s\w]+주요\s*뉴스\s*·",
+        r"▶\s*매일\s*라이브",
+        r"▶\s*더보기",
+        r"ⓒ\s*[가-힣a-zA-Z0-9\s\(\)._-]+무단",
+        r"Copyrights\s*ⓒ"
+    ]
+    
+    for pat in cutoff_patterns:
+        match = re.search(pat, cleaned, flags=re.IGNORECASE)
+        if match:
+            cleaned = cleaned[:match.start()]
+            break
+
+    # 2. 추가 개별 단어 광고 제거 패턴
     ad_patterns = [
         r"무단전재\s*&\s*재배포\s*금지",
         r"Copyrights\s*ⓒ.*All\s*rights\s*reserved",
@@ -22,7 +41,6 @@ def clean_content(text):
         r"스폰서\s*링크",
     ]
     
-    cleaned = text
     for pattern in ad_patterns:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
         
@@ -46,6 +64,32 @@ def build_markdown_card(title, source, date, url, content):
         source_name = "GeekNews"
     else:
         source_name = source
+
+    source_name_map = {
+        "nate": "네이트판",
+        "nate_news": "네이트뉴스",
+        "geeknews": "긱뉴스",
+        "theqoo": "더쿠",
+        "hn_hot": "HN Hot",
+        "hn_best": "HN Best",
+        "ruliweb": "루리웹",
+        "todayhumor": "오늘의유머",
+        "clien": "클리앙",
+        "yahoo_jp": "Yahoo Japan",
+        "mumsnet": "Mumsnet",
+        "reddit_boru": "Reddit BORU",
+        "reddit_mc": "Reddit MC",
+        "reddit_pr": "Reddit PR",
+        "reddit_aita": "Reddit AITA",
+        "reddit_rel": "Reddit RA",
+        "inssider_couple": "인싸이더(연애)",
+        "inssider_job": "인싸이더(직장)",
+        "inssider_politics": "인싸이더(정치)",
+        "inssider_humor": "인싸이더(유머)",
+        "inssider_lounge": "인싸이더(라운지)",
+        "manual": "직접입력",
+    }
+    source_name = source_name_map.get(source, source_name)
     
     # 본문이 너무 길면 상위 15라인 정도 요약 표시를 위해 일부 슬라이스 구성 가능
     # (여기서는 원문 전체 보존하되 보기 좋은 레이아웃 형성)
