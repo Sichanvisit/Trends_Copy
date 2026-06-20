@@ -1491,6 +1491,16 @@
                                         style="font-size: 12px;" placeholder="https:// 또는 /static/... 이미지 경로 입력">
                                 </div>
 
+                                <!-- 미리보기 썸네일 영역 (기본 숨김) -->
+                                <div id="story-img-preview-container" class="form-group" style="display: none; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; margin-top: 8px;">
+                                    <img id="story-img-thumbnail" src="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--card-border);" alt="미리보기">
+                                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                                        <span style="font-size: 11px; font-weight: 600; color: var(--text-primary);">지정된 이미지 미리보기</span>
+                                        <span style="font-size: 10px; color: var(--text-secondary);">카드 상단 영역에 렌더링됩니다.</span>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" style="width: auto; margin: 0; padding: 4px 8px; font-size: 10px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444;" onclick="removeSelectedImage()">✕ 삭제</button>
+                                </div>
+
                                 <!-- 이미지 세부 조작 (크기/위치) 영역 -->
                                 <div style="border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 10px;">
                                     <div style="font-size: 11px; font-weight: 600; color: var(--accent-primary);">📐 이미지 위치 및 크기 수동 수정</div>
@@ -2912,6 +2922,11 @@
                     continue;
                 } else if (line.includes('추천 이미지') || line.includes('서칭 키워드')) {
                     currentSection = "keywords";
+                    const idx = line.indexOf(':');
+                    if (idx !== -1) {
+                        let cleanLine = line.substring(idx + 1).replace(/^-\s*/, '').replace(/^\*\s*/, '').replace(/^📷\s*/, '').trim();
+                        if (cleanLine) keywordLines.push(cleanLine);
+                    }
                     continue;
                 }
 
@@ -3034,6 +3049,14 @@
                         urlInput.value = data.image_url;
                         statusSpan.innerText = `업로드 완료: ${file.name}`;
                         alert("✅ 이미지 업로드 성공!");
+
+                        // 썸네일 미리보기 적용
+                        const previewContainer = document.getElementById("story-img-preview-container");
+                        const thumbnail = document.getElementById("story-img-thumbnail");
+                        if (thumbnail && previewContainer) {
+                            thumbnail.src = data.image_url;
+                            previewContainer.style.display = "flex";
+                        }
                     } else {
                         statusSpan.innerText = "업로드 실패";
                     }
@@ -3149,6 +3172,10 @@
 
             document.getElementById("story-card-preview-area").style.display = "none";
             document.getElementById("story-card-placeholder").style.display = "block";
+
+            // 통합 텍스트 및 미리보기 이미지 초기화
+            document.getElementById("story-combined-post").value = "";
+            removeSelectedImage();
 
             // 슬라이더 조작계 리셋
             document.getElementById("story-img-scale").value = "1.0";
@@ -3642,6 +3669,14 @@
                         urlInput.value = data.image_url;
                         statusSpan.innerText = `업로드 완료: 클립보드 이미지 (Ctrl+V)`;
                         alert("📋 클립보드 이미지가 성공적으로 붙여넣어져 업로드되었습니다!");
+                        
+                        // 썸네일 미리보기 적용
+                        const previewContainer = document.getElementById("story-img-preview-container");
+                        const thumbnail = document.getElementById("story-img-thumbnail");
+                        if (thumbnail && previewContainer) {
+                            thumbnail.src = data.image_url;
+                            previewContainer.style.display = "flex";
+                        }
                     } else {
                         statusSpan.innerText = "업로드 실패";
                     }
@@ -3649,6 +3684,37 @@
                 .catch(err => {
                     statusSpan.innerText = "에러 발생";
                     alert("클립보드 이미지 업로드 에러: " + err.message);
+                });
+            }
+        });
+
+        // 이미지 선택 삭제 함수
+        function removeSelectedImage() {
+            document.getElementById("story-card-image-url").value = "";
+            document.getElementById("story-card-file").value = "";
+            document.getElementById("story-upload-status").innerText = "선택된 파일 없음";
+            
+            const previewContainer = document.getElementById("story-img-preview-container");
+            const thumbnail = document.getElementById("story-img-thumbnail");
+            if (previewContainer) previewContainer.style.display = "none";
+            if (thumbnail) thumbnail.src = "";
+        }
+
+        // URL 직접 입력 필드 이벤트 바인딩
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlInput = document.getElementById("story-card-image-url");
+            if (urlInput) {
+                urlInput.addEventListener('input', function() {
+                    const url = this.value.trim();
+                    const previewContainer = document.getElementById("story-img-preview-container");
+                    const thumbnail = document.getElementById("story-img-thumbnail");
+                    if (url && (url.startsWith('http') || url.startsWith('/static/'))) {
+                        if (thumbnail) thumbnail.src = url;
+                        if (previewContainer) previewContainer.style.display = "flex";
+                    } else {
+                        if (previewContainer) previewContainer.style.display = "none";
+                        if (thumbnail) thumbnail.src = "";
+                    }
                 });
             }
         });
