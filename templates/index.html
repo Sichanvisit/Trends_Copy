@@ -863,13 +863,13 @@
                 <!-- 출처 분포 도넛 차트 -->
                 <div class="card" style="margin-bottom: 0;">
                     <div class="card-title">출처별 분포도</div>
-                    <div style="height: 140px; position: relative; display: flex; justify-content: center;">
+                    <div style="height: 250px; position: relative; display: flex; justify-content: center;">
                         <canvas id="sourceChart"></canvas>
                     </div>
                 </div>
 
                 <!-- 자동 제어 컨트롤러 + 원문 긁기 -->
-                <div class="card" style="margin-bottom: 0;">
+                <div class="card" style="margin-bottom: 0; margin-top: auto;">
                     <div class="card-title">실시간 수집 제어</div>
                     <button class="btn" id="btn-collect-all" onclick="triggerCollection('all')"
                         style="margin-bottom: 10px;">통합 자동 수집 실행</button>
@@ -2122,13 +2122,68 @@
                         chartInstance.destroy();
                     }
 
+                    const sourceMapping = {
+                        'manual': '직접입력',
+                        'nate': '네이트판',
+                        'nate_news': '네이트뉴스',
+                        'geeknews': '긱뉴스',
+                        'shinsia': '신시아블로그',
+                        'theqoo': '더쿠',
+                        'inssider_lounge': '인싸라운지',
+                        'inssider_couple': '인싸연애',
+                        'inssider_job': '인싸직장',
+                        'inssider_politics': '인싸정치',
+                        'inssider_humor': '인싸유머',
+                        'hn_hot': 'HN Hot',
+                        'hn_best': 'HN Best',
+                        'yahoo_jp': 'Yahoo JP',
+                        'ruliweb': '루리웹',
+                        'todayhumor': '오늘의유머',
+                        'clien': '클리앙',
+                        'mumsnet': 'Mumsnet',
+                        'reddit_boru': 'Reddit BORU',
+                        'reddit_mc': 'Reddit MC',
+                        'reddit_pr': 'Reddit PR',
+                        'reddit_aita': 'Reddit AITA',
+                        'reddit_rel': 'Reddit RA'
+                    };
+
+                    const sourceColors = {
+                        'manual': '#8b5cf6',
+                        'nate': '#ef4444',
+                        'nate_news': '#3b82f6',
+                        'geeknews': '#10b981',
+                        'shinsia': '#22c55e',
+                        'theqoo': '#ec4899',
+                        'inssider_lounge': '#a78bfa',
+                        'inssider_couple': '#f472b6',
+                        'inssider_job': '#60a5fa',
+                        'inssider_politics': '#fb7185',
+                        'inssider_humor': '#34d399',
+                        'hn_hot': '#f97316',
+                        'hn_best': '#fbbf24',
+                        'yahoo_jp': '#6366f1',
+                        'ruliweb': '#2563eb',
+                        'todayhumor': '#0d9488',
+                        'clien': '#06b6d4',
+                        'mumsnet': '#f43f5e',
+                        'reddit_boru': '#ff4500',
+                        'reddit_mc': '#d97706',
+                        'reddit_pr': '#4f46e5',
+                        'reddit_aita': '#db2777',
+                        'reddit_rel': '#e11d48'
+                    };
+
+                    const mappedLabels = data.source_labels.map(lbl => sourceMapping[lbl] || lbl);
+                    const mappedColors = data.source_labels.map(lbl => sourceColors[lbl] || '#6b7280');
+
                     chartInstance = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
-                            labels: ['네이트판', '랭킹뉴스', 'GeekNews'],
+                            labels: mappedLabels,
                             datasets: [{
-                                data: [data.nate_count, data.news_count, data.geek_count],
-                                backgroundColor: ['#ef4444', '#3b82f6', '#10b981'],
+                                data: data.source_values,
+                                backgroundColor: mappedColors,
                                 borderWidth: 0
                             }]
                         },
@@ -2138,7 +2193,12 @@
                             plugins: {
                                 legend: {
                                     position: 'bottom',
-                                    labels: { color: '#9ca3af', font: { size: 11 } }
+                                    labels: { 
+                                        color: '#9ca3af', 
+                                        font: { size: 10 },
+                                        boxWidth: 8,
+                                        padding: 6
+                                    }
                                 }
                             }
                         }
