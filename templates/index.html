@@ -1471,23 +1471,8 @@
                                     데이터 직접 작성/편집</label>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label"
-                                        style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">게시글
-                                        제목 (X 본문용)</label>
-                                    <input type="text" id="story-card-title" class="input-text" style="font-size: 12px;"
-                                        placeholder="예: 살면서 본 것 중 제일 골 때리는 원룸 매물" oninput="updateCombinedPostText()">
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label"
-                                        style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">게시글
-                                        코멘트 (X 본문용)</label>
-                                    <input type="text" id="story-card-comment" class="input-text"
-                                        style="font-size: 12px;" placeholder="예: 진짜 보자마자 할 말을 잃음ㅋㅋㅋ 집주인 창조경제 대단하네"
-                                        oninput="updateCombinedPostText()">
-                                </div>
-                            </div>
+                            <input type="hidden" id="story-card-title" value="">
+                            <input type="hidden" id="story-card-comment" value="">
 
                             <div class="form-group"
                                 style="margin-bottom: 14px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); padding: 12px; border-radius: 8px;">
@@ -1606,35 +1591,60 @@
                                     
                                     <!-- 배율 조절 -->
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                                            <span>이미지 배율 (Scale)</span>
-                                            <span id="story-img-scale-val">1.00x</span>
+                                        <div style="font-size: 10px; color: var(--text-secondary);">이미지 배율 (Scale)</div>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="range" id="story-img-scale" min="0.1" max="3.0" step="0.05" value="1.0" 
+                                                   style="flex: 1; accent-color: var(--accent-primary); cursor: pointer;"
+                                                   oninput="updateImgScaleVal(this.value)">
+                                            <div style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;">
+                                                <button type="button" class="tab-btn" style="padding: 2px 6px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgScale(-0.05)">-</button>
+                                                <input type="text" id="story-img-scale-val-input" value="1.00" 
+                                                       style="width: 40px; text-align: center; font-size: 10px; padding: 2px 4px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 4px; color: var(--text-primary);"
+                                                       onchange="updateImgScaleVal(this.value)">
+                                                <button type="button" class="tab-btn" style="padding: 2px 6px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgScale(0.05)">+</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 4px; font-size: 10px; margin: 0; min-width: auto; width: auto; border-color: rgba(255,255,255,0.1);" onclick="updateImgScaleVal(1.0)">초기화</button>
+                                            </div>
                                         </div>
-                                        <input type="range" id="story-img-scale" min="0.1" max="3.0" step="0.05" value="1.0" 
-                                               style="width: 100%; accent-color: var(--accent-primary); cursor: pointer;"
-                                               oninput="document.getElementById('story-img-scale-val').innerText = parseFloat(this.value).toFixed(2) + 'x'">
                                     </div>
                                     
                                     <!-- 가로 오프셋 (Offset X) -->
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                                            <span>가로 위치 이동 (Offset X)</span>
-                                            <span id="story-img-offset-x-val">0px</span>
+                                        <div style="font-size: 10px; color: var(--text-secondary);">가로 위치 이동 (Offset X)</div>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="range" id="story-img-offset-x" min="-1000" max="1000" step="5" value="0" 
+                                                   style="flex: 1; accent-color: var(--accent-primary); cursor: pointer;"
+                                                   oninput="updateImgOffsetXVal(this.value)">
+                                            <div style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;">
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetX(-10)">-10</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetX(-1)">-1</button>
+                                                <input type="text" id="story-img-offset-x-val-input" value="0" 
+                                                       style="width: 35px; text-align: center; font-size: 10px; padding: 2px 4px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 4px; color: var(--text-primary);"
+                                                       onchange="updateImgOffsetXVal(this.value)">
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetX(1)">+1</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetX(10)">+10</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 4px; font-size: 10px; margin: 0; min-width: auto; width: auto; border-color: rgba(255,255,255,0.1);" onclick="updateImgOffsetXVal(0)">초기화</button>
+                                            </div>
                                         </div>
-                                        <input type="range" id="story-img-offset-x" min="-1000" max="1000" step="5" value="0" 
-                                               style="width: 100%; accent-color: var(--accent-primary); cursor: pointer;"
-                                               oninput="document.getElementById('story-img-offset-x-val').innerText = this.value + 'px'">
                                     </div>
                                     
                                     <!-- 세로 오프셋 (Offset Y) -->
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                                            <span>세로 위치 이동 (Offset Y)</span>
-                                            <span id="story-img-offset-y-val">0px</span>
+                                        <div style="font-size: 10px; color: var(--text-secondary);">세로 위치 이동 (Offset Y)</div>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="range" id="story-img-offset-y" min="-1000" max="1000" step="5" value="0" 
+                                                   style="flex: 1; accent-color: var(--accent-primary); cursor: pointer;"
+                                                   oninput="updateImgOffsetYVal(this.value)">
+                                            <div style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;">
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetY(-10)">-10</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetY(-1)">-1</button>
+                                                <input type="text" id="story-img-offset-y-val-input" value="0" 
+                                                       style="width: 35px; text-align: center; font-size: 10px; padding: 2px 4px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 4px; color: var(--text-primary);"
+                                                       onchange="updateImgOffsetYVal(this.value)">
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetY(1)">+1</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 5px; font-size: 10px; margin: 0; min-width: auto; width: auto;" onclick="adjustImgOffsetY(10)">+10</button>
+                                                <button type="button" class="tab-btn" style="padding: 2px 4px; font-size: 10px; margin: 0; min-width: auto; width: auto; border-color: rgba(255,255,255,0.1);" onclick="updateImgOffsetYVal(0)">초기화</button>
+                                            </div>
                                         </div>
-                                        <input type="range" id="story-img-offset-y" min="-1000" max="1000" step="5" value="0" 
-                                               style="width: 100%; accent-color: var(--accent-primary); cursor: pointer;"
-                                               oninput="document.getElementById('story-img-offset-y-val').innerText = this.value + 'px'">
                                     </div>
                                 </div>
                             </div>
@@ -3287,8 +3297,62 @@
         }
 
         // 실화 인증형 카드 생성 API 호출 (1:1 정사각형 고정 구조)
-        function generateDirectStoryCard() {
-            const title = document.getElementById("story-card-title").value.trim();
+                // 이미지 위치 및 크기 조절을 위한 헬퍼 함수들
+        function updateImgScaleVal(val) {
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 1.0;
+            if (num < 0.1) num = 0.1;
+            if (num > 3.0) num = 3.0;
+            
+            document.getElementById("story-img-scale").value = num;
+            const inputEl = document.getElementById("story-img-scale-val-input");
+            if (inputEl) inputEl.value = num.toFixed(2);
+        }
+
+        function adjustImgScale(delta) {
+            const current = parseFloat(document.getElementById("story-img-scale").value) || 1.0;
+            updateImgScaleVal(current + delta);
+        }
+
+        function updateImgOffsetXVal(val) {
+            let num = parseInt(val);
+            if (isNaN(num)) num = 0;
+            if (num < -1000) num = -1000;
+            if (num > 1000) num = 1000;
+            
+            document.getElementById("story-img-offset-x").value = num;
+            const inputEl = document.getElementById("story-img-offset-x-val-input");
+            if (inputEl) inputEl.value = num;
+        }
+
+        function adjustImgOffsetX(delta) {
+            const current = parseInt(document.getElementById("story-img-offset-x").value) || 0;
+            updateImgOffsetXVal(current + delta);
+        }
+
+        function updateImgOffsetYVal(val) {
+            let num = parseInt(val);
+            if (isNaN(num)) num = 0;
+            if (num < -1000) num = -1000;
+            if (num > 1000) num = 1000;
+            
+            document.getElementById("story-img-offset-y").value = num;
+            const inputEl = document.getElementById("story-img-offset-y-val-input");
+            if (inputEl) inputEl.value = num;
+        }
+
+        function adjustImgOffsetY(delta) {
+            const current = parseInt(document.getElementById("story-img-offset-y").value) || 0;
+            updateImgOffsetYVal(current + delta);
+        }
+
+function generateDirectStoryCard() {
+            let title = document.getElementById("story-card-title").value.trim();
+            if (!title) {
+                const firstLine = document.getElementById("story-card-text").value.trim().split("\n")[0];
+                title = firstLine.substring(0, 15).replace(/[^a-zA-Z0-9가-힣\s]/g, "").trim() || "story_card_" + Date.now();
+                document.getElementById("story-card-title").value = title;
+            }
             const text = document.getElementById("story-card-text").value.trim();
 
             if (!title) {
@@ -3398,11 +3462,17 @@
 
             // 슬라이더 조작계 리셋
             document.getElementById("story-img-scale").value = "1.0";
-            document.getElementById("story-img-scale-val").innerText = "1.00x";
+            if (document.getElementById("story-img-scale-val-input")) {
+                document.getElementById("story-img-scale-val-input").value = "1.00";
+            }
             document.getElementById("story-img-offset-x").value = "0";
-            document.getElementById("story-img-offset-x-val").innerText = "0px";
+            if (document.getElementById("story-img-offset-x-val-input")) {
+                document.getElementById("story-img-offset-x-val-input").value = "0";
+            }
             document.getElementById("story-img-offset-y").value = "0";
-            document.getElementById("story-img-offset-y-val").innerText = "0px";
+            if (document.getElementById("story-img-offset-y-val-input")) {
+                document.getElementById("story-img-offset-y-val-input").value = "0";
+            }
             
             updateCombinedPostText();
         }
