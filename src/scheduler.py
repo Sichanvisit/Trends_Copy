@@ -1,12 +1,17 @@
 import os
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 import traceback
 import tweepy
 from apscheduler.schedulers.background import BackgroundScheduler
 import config
 
 DB_FILE_PATH = config.RAW_DATA_DIR / "scheduler.db"
+UPLOAD_DIR = config.BASE_DIR / "static" / "uploads"
+
+# Ensure the uploads directory exists
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE_PATH)
@@ -25,10 +30,21 @@ def init_db():
                 status TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL,
                 error_message TEXT DEFAULT NULL,
-                tweet_id TEXT DEFAULT NULL
+                tweet_id TEXT DEFAULT NULL,
+                media_file TEXT DEFAULT NULL
             )
         """)
         conn.commit()
+        
+        # Safe migration: Add media_file column if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE scheduled_tweets ADD COLUMN media_file TEXT DEFAULT NULL")
+            conn.commit()
+            print("[+] Added media_file column to scheduled_tweets table.")
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
+            
         print("[+] Scheduler database initialized successfully.")
     except Exception as e:
         print(f"[!] Failed to initialize scheduler database: {traceback.format_exc()}")
@@ -37,7 +53,7 @@ def init_db():
 
 # --- Database CRUD Operations ---
 
-def add_scheduled_tweet(text: str, scheduled_at: str):
+def add_scheduled_tweet(text: str, scheduled_at: str, media_file: str = None):
     """
     Add a scheduled tweet.
     scheduled_at: ISO 8601 string, e.g. "2026-06-22 15:30:00"
@@ -47,8 +63,8 @@ def add_scheduled_tweet(text: str, scheduled_at: str):
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO scheduled_tweets (text, scheduled_at, status, created_at) VALUES (?, ?, ?, ?)",
-            (text, scheduled_at, "pending", now_str)
+            "INSERT INTO scheduled_tweets (text, scheduled_at, status, created_at, media_file) VALUES (?, ?, ?, ?, ?)",
+            (text, scheduled_at, "pending", now_str, media_file)
         )
         conn.commit()
         new_id = cursor.lastrowid
@@ -93,8 +109,9 @@ def get_scheduled_tweet(post_id: int):
     finally:
         conn.close()
 
-def update_scheduled_tweet(post_id: int, text: str = None, scheduled_at: str = None, status: str = None, tweet_id: str = None, error_message: str = None):
+def update_scheduled_tweet(post_id: int, text: str = None, scheduled_at: str = None, status: str = None, tweet_id: str = None, error_message: str = None, media_file: str = None, clear_media: bool = False):
     """Update scheduled tweet fields."""
+    old_tweet = get_scheduled_tweet(post_id)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -115,6 +132,15 @@ def update_scheduled_tweet(post_id: int, text: str = None, scheduled_at: str = N
         if error_message is not None:
             updates.append("error_message = ?")
             params.append(error_message)
+        
+        should_delete_old_media = False
+        if clear_media:
+            updates.append("media_file = NULL")
+            should_delete_old_media = True
+        elif media_file is not None:
+            updates.append("media_file = ?")
+            params.append(media_file)
+            should_delete_old_media = True
             
         if not updates:
             return False
@@ -122,7 +148,20 @@ def update_scheduled_tweet(post_id: int, text: str = None, scheduled_at: str = N
         params.append(post_id)
         cursor.execute(f"UPDATE scheduled_tweets SET {', '.join(updates)} WHERE id = ?", params)
         conn.commit()
-        return cursor.rowcount > 0
+        success = cursor.rowcount > 0
+        
+        # Clean up old media file if update succeeded and media has changed/cleared
+        if success and should_delete_old_media and old_tweet and old_tweet.get("media_file"):
+            if clear_media or (media_file is not None and old_tweet["media_file"] != media_file):
+                media_path = config.BASE_DIR / old_tweet["media_file"]
+                if media_path.exists() and media_path.is_file():
+                    try:
+                        media_path.unlink()
+                        print(f"[+] Deleted replaced/removed media file: {media_path}")
+                    except Exception as ex:
+                        print(f"[!] Failed to delete local file {media_path}: {ex}")
+                        
+        return success
     except Exception as e:
         print(f"[!] Error updating scheduled tweet {post_id}: {e}")
         return False
@@ -131,12 +170,23 @@ def update_scheduled_tweet(post_id: int, text: str = None, scheduled_at: str = N
 
 def delete_scheduled_tweet(post_id: int):
     """Delete a scheduled tweet by ID."""
+    tweet = get_scheduled_tweet(post_id)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM scheduled_tweets WHERE id = ?", (post_id,))
         conn.commit()
-        return cursor.rowcount > 0
+        success = cursor.rowcount > 0
+        
+        if success and tweet and tweet.get("media_file"):
+            media_path = config.BASE_DIR / tweet["media_file"]
+            if media_path.exists() and media_path.is_file():
+                try:
+                    media_path.unlink()
+                    print(f"[+] Deleted local media file: {media_path}")
+                except Exception as ex:
+                    print(f"[!] Failed to delete local file {media_path}: {ex}")
+        return success
     except Exception as e:
         print(f"[!] Error deleting scheduled tweet {post_id}: {e}")
         return False
@@ -145,7 +195,7 @@ def delete_scheduled_tweet(post_id: int):
 
 # --- X (Twitter) API Integration ---
 
-def post_to_x(text: str):
+def post_to_x(text: str, media_file: str = None):
     """
     Publish a tweet to X using X API v2.
     If credentials are placeholder or missing, it simulates a successful post for testing purposes.
@@ -162,19 +212,57 @@ def post_to_x(text: str):
         ck.strip() == ""
     )
 
+    # Resolve absolute path of media_file if present
+    abs_media_path = None
+    if media_file:
+        path_obj = Path(media_file)
+        if not path_obj.is_absolute():
+            abs_media_path = config.BASE_DIR / media_file
+        else:
+            abs_media_path = path_obj
+        if not abs_media_path.exists():
+            print(f"[!] Media file {abs_media_path} not found. Proceeding without media.")
+            abs_media_path = None
+
     if is_placeholder:
         print("[!] X API credentials not fully configured. Simulating successful post.")
         mock_id = f"simulated_{int(datetime.now().timestamp())}"
-        return {"success": True, "tweet_id": mock_id, "simulated": True}
+        sim_res = {"success": True, "tweet_id": mock_id, "simulated": True}
+        if media_file:
+            sim_res["media_file_uploaded"] = str(media_file)
+            print(f"[*] Simulated upload of media file: {media_file}")
+        return sim_res
 
     try:
+        # X API v2 client
         client = tweepy.Client(
             consumer_key=ck,
             consumer_secret=cs,
             access_token=at,
             access_token_secret=ats
         )
-        response = client.create_tweet(text=text)
+
+        media_ids = None
+        if abs_media_path:
+            print(f"[*] Uploading media {abs_media_path} via API v1.1...")
+            # X API v1.1 auth for media upload
+            auth = tweepy.OAuth1UserHandler(
+                consumer_key=ck,
+                consumer_secret=cs,
+                access_token=at,
+                access_token_secret=ats
+            )
+            api = tweepy.API(auth)
+            media = api.media_upload(filename=str(abs_media_path))
+            media_ids = [media.media_id_string]
+            print(f"[+] Media uploaded successfully. Media ID: {media.media_id_string}")
+
+        # Create tweet (attach media if present)
+        if media_ids:
+            response = client.create_tweet(text=text, media_ids=media_ids)
+        else:
+            response = client.create_tweet(text=text)
+
         # Check if response has data and id
         if response and response.data and 'id' in response.data:
             tweet_id = str(response.data['id'])
@@ -205,13 +293,14 @@ def worker_tick():
         for tweet in tweets_to_post:
             tid = tweet["id"]
             ttext = tweet["text"]
+            tmedia = tweet["media_file"]
             print(f"[*] Processing scheduled tweet #{tid} at {now_str}...")
             
             # Update status to 'posting' to avoid double execution in slow environments
             update_scheduled_tweet(tid, status="posting")
             
             # Post to X
-            res = post_to_x(ttext)
+            res = post_to_x(ttext, media_file=tmedia)
             if res["success"]:
                 # Success
                 update_scheduled_tweet(

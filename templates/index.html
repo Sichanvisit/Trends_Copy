@@ -1885,6 +1885,24 @@
                 </div>
             </div>
 
+            <!-- 이미지 첨부 필드 -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">📷 이미지 첨부 (선택)</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="file" id="schedule-media" accept="image/*" style="display: none;" onchange="previewScheduleImage(event)">
+                    <button type="button" class="tab-btn" style="margin: 0; padding: 8px 16px; min-width: auto; height: 38px; display: flex; align-items: center; gap: 6px;" onclick="document.getElementById('schedule-media').click()">
+                        <span>📂 파일 선택</span>
+                    </button>
+                    <span id="schedule-media-filename" style="color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;">선택된 파일 없음</span>
+                </div>
+                
+                <!-- 이미지 미리보기 컨테이너 -->
+                <div id="schedule-media-preview-container" style="margin-top: 10px; position: relative; display: none; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 1px solid var(--card-border);">
+                    <img id="schedule-media-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                    <button type="button" onclick="removeScheduleImage()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">✕</button>
+                </div>
+            </div>
+
             <div id="schedule-status-group" class="form-group" style="margin-bottom: 20px; display: none;">
                 <label class="form-label">전송 상태</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -2141,7 +2159,8 @@
                                 status: eventData.status,
                                 tweet_id: eventData.tweet_id,
                                 error_message: eventData.error_message,
-                                scheduled_at: eventData.scheduled_at
+                                scheduled_at: eventData.scheduled_at,
+                                media_file: eventData.media_file
                             }
                         };
                     },
@@ -2227,12 +2246,12 @@
 
         function updateEventTime(event) {
             const newTime = formatDateTimeForInput(event.start);
+            const formData = new FormData();
+            formData.append("scheduled_at", newTime);
+            
             fetch(`/api/schedule/${event.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    scheduled_at: newTime
-                })
+                body: formData
             })
             .then(res => {
                 if (!res.ok) throw new Error("Failed to update schedule time");
@@ -2280,6 +2299,34 @@
             }
         }
 
+        window.scheduleMediaRemoved = false;
+
+        function previewScheduleImage(event) {
+            const file = event.target.files[0];
+            const filenameSpan = document.getElementById("schedule-media-filename");
+            const previewContainer = document.getElementById("schedule-media-preview-container");
+            const previewImg = document.getElementById("schedule-media-preview");
+            
+            if (file) {
+                filenameSpan.innerText = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewContainer.style.display = "block";
+                }
+                reader.readAsDataURL(file);
+                window.scheduleMediaRemoved = false;
+            }
+        }
+
+        function removeScheduleImage() {
+            document.getElementById("schedule-media").value = "";
+            document.getElementById("schedule-media-filename").innerText = "선택된 파일 없음";
+            document.getElementById("schedule-media-preview-container").style.display = "none";
+            document.getElementById("schedule-media-preview").src = "";
+            window.scheduleMediaRemoved = true;
+        }
+
         function openScheduleModalForNew(dateStr) {
             document.getElementById("schedule-modal-title").innerText = "📅 X(트위터) 예약 게시물 등록";
             document.getElementById("schedule-post-id").value = "";
@@ -2289,6 +2336,13 @@
             const pad = (num) => String(num).padStart(2, '0');
             const timePart = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
             document.getElementById("schedule-datetime").value = `${dateStr}T${timePart}`;
+            
+            // Reset image fields
+            document.getElementById("schedule-media").value = "";
+            document.getElementById("schedule-media-filename").innerText = "선택된 파일 없음";
+            document.getElementById("schedule-media-preview-container").style.display = "none";
+            document.getElementById("schedule-media-preview").src = "";
+            window.scheduleMediaRemoved = false;
             
             document.getElementById("schedule-status-group").style.display = "none";
             document.getElementById("btn-delete-schedule").style.display = "none";
@@ -2304,6 +2358,23 @@
             
             const scheduledAt = event.extendedProps.scheduled_at;
             document.getElementById("schedule-datetime").value = scheduledAt.replace(" ", "T").substring(0, 16);
+            
+            // Reset and load image fields
+            document.getElementById("schedule-media").value = "";
+            document.getElementById("schedule-media-filename").innerText = "선택된 파일 없음";
+            window.scheduleMediaRemoved = false;
+            
+            const mediaFile = event.extendedProps.media_file;
+            const previewContainer = document.getElementById("schedule-media-preview-container");
+            const previewImg = document.getElementById("schedule-media-preview");
+            if (mediaFile) {
+                previewImg.src = "/" + mediaFile;
+                previewContainer.style.display = "block";
+                document.getElementById("schedule-media-filename").innerText = mediaFile.split("/").pop();
+            } else {
+                previewContainer.style.display = "none";
+                previewImg.src = "";
+            }
             
             const status = event.extendedProps.status;
             const badge = document.getElementById("schedule-status-badge");
@@ -2381,21 +2452,29 @@
             const url = isEdit ? `/api/schedule/${id}` : "/api/schedule";
             const method = isEdit ? "PUT" : "POST";
             
-            const payload = {
-                text: text,
-                scheduled_at: scheduledAt
-            };
+            const formData = new FormData();
+            formData.append("text", text);
+            formData.append("scheduled_at", scheduledAt);
+            
+            const fileInput = document.getElementById("schedule-media");
+            if (fileInput.files.length > 0) {
+                formData.append("media_file", fileInput.files[0]);
+            }
+            
             if (isEdit) {
-                const statusSelect = document.getElementById("schedule-status-badge").innerText.toLowerCase();
+                const statusBadge = document.getElementById("schedule-status-badge");
+                const statusSelect = statusBadge ? statusBadge.innerText.toLowerCase() : "pending";
                 if (statusSelect === "failed") {
-                    payload.status = "pending";
+                    formData.append("status", "pending");
+                }
+                if (window.scheduleMediaRemoved) {
+                    formData.append("remove_media", "true");
                 }
             }
             
             fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: formData
             })
             .then(res => {
                 if (!res.ok) throw new Error("예약 저장에 실패했습니다.");

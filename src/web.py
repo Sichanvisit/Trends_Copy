@@ -1353,41 +1353,109 @@ def generate_story_card_direct_api(req: DirectStoryCardRequest):
 
 # --- X (Twitter) Scheduled Posts API ---
 
-class CreateScheduleRequest(BaseModel):
-    text: str
-    scheduled_at: str
-
-class UpdateScheduleRequest(BaseModel):
-    text: Optional[str] = None
-    scheduled_at: Optional[str] = None
-    status: Optional[str] = None
-
 @app.get("/api/schedule")
 def get_schedule_api(start: Optional[str] = None, end: Optional[str] = None):
     from src.scheduler import get_scheduled_tweets
     return get_scheduled_tweets(start, end)
 
 @app.post("/api/schedule")
-def create_schedule_api(req: CreateScheduleRequest):
+def create_schedule_api(
+    text: str = Form(...),
+    scheduled_at: str = Form(...),
+    media_file: Optional[UploadFile] = File(None)
+):
     from src.scheduler import add_scheduled_tweet
-    if not req.text.strip():
+    import uuid
+    
+    if not text.strip():
         raise HTTPException(status_code=400, detail="Tweet content cannot be empty")
-    new_id = add_scheduled_tweet(req.text, req.scheduled_at)
+        
+    media_rel_path = None
+    if media_file and media_file.filename:
+        # Create unique filename
+        ext = os.path.splitext(media_file.filename)[1]
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        from src.scheduler import UPLOAD_DIR
+        file_path = UPLOAD_DIR / unique_filename
+        try:
+            with open(file_path, "wb") as buffer:
+                while content := media_file.file.read(1024 * 1024):
+                    buffer.write(content)
+            media_rel_path = f"static/uploads/{unique_filename}"
+        except Exception as e:
+            print(f"[!] Failed to save uploaded file: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save uploaded file")
+            
+    new_id = add_scheduled_tweet(text, scheduled_at, media_file=media_rel_path)
     if new_id is None:
+        # Cleanup uploaded file if DB insert failed
+        if media_rel_path:
+            try:
+                (config.BASE_DIR / media_rel_path).unlink(missing_ok=True)
+            except Exception:
+                pass
         raise HTTPException(status_code=500, detail="Failed to save scheduled tweet")
+        
     return {"status": "success", "id": new_id}
 
 @app.put("/api/schedule/{post_id}")
-def update_schedule_api(post_id: int, req: UpdateScheduleRequest):
-    from src.scheduler import update_scheduled_tweet
+def update_schedule_api(
+    post_id: int,
+    text: Optional[str] = Form(None),
+    scheduled_at: Optional[str] = Form(None),
+    status: Optional[str] = Form(None),
+    media_file: Optional[UploadFile] = File(None),
+    remove_media: Optional[str] = Form(None)
+):
+    from src.scheduler import update_scheduled_tweet, get_scheduled_tweet
+    import uuid
+    
+    # Check if tweet exists
+    tweet = get_scheduled_tweet(post_id)
+    if not tweet:
+        raise HTTPException(status_code=404, detail="Scheduled tweet not found")
+        
+    clear_media = False
+    if remove_media and remove_media.lower() in ("true", "1", "yes"):
+        clear_media = True
+        
+    media_rel_path = None
+    if media_file and media_file.filename:
+        ext = os.path.splitext(media_file.filename)[1]
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        from src.scheduler import UPLOAD_DIR
+        file_path = UPLOAD_DIR / unique_filename
+        try:
+            with open(file_path, "wb") as buffer:
+                while content := media_file.file.read(1024 * 1024):
+                    buffer.write(content)
+            media_rel_path = f"static/uploads/{unique_filename}"
+        except Exception as e:
+            print(f"[!] Failed to save uploaded file: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save uploaded file")
+            
+    # If new media is uploaded, do not clear it
+    if media_rel_path:
+        clear_media = False
+        
     success = update_scheduled_tweet(
         post_id,
-        text=req.text,
-        scheduled_at=req.scheduled_at,
-        status=req.status
+        text=text,
+        scheduled_at=scheduled_at,
+        status=status,
+        media_file=media_rel_path,
+        clear_media=clear_media
     )
+    
     if not success:
-        raise HTTPException(status_code=404, detail="Scheduled tweet not found or no changes made")
+        # Cleanup newly uploaded file since it wasn't saved in DB
+        if media_rel_path:
+            try:
+                (config.BASE_DIR / media_rel_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail="Failed to update scheduled tweet")
+        
     return {"status": "success"}
 
 @app.delete("/api/schedule/{post_id}")
@@ -1406,7 +1474,7 @@ def post_now_api(post_id: int):
         raise HTTPException(status_code=404, detail="Scheduled tweet not found")
     
     update_scheduled_tweet(post_id, status="posting")
-    res = post_to_x(tweet["text"])
+    res = post_to_x(tweet["text"], media_file=tweet.get("media_file"))
     if res["success"]:
         update_scheduled_tweet(
             post_id,
