@@ -1117,21 +1117,6 @@
             </div>
         </div>
 
-        <!-- 📅 X(트위터) 예약 게시물 캘린더 관리자 (접이식) -->
-        <div class="container" style="max-width: 100%; width: 100%; margin: 20px auto 0 auto; padding-top: 0; display: block; padding-bottom: 0;">
-            <div class="card" id="calendar-master-card" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(15, 23, 42, 0.4); padding: 16px 20px; margin-bottom: 0;">
-                <div class="card-title" id="calendar-master-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; user-select: none;" onclick="toggleCalendarMaster()">
-                    <span style="font-size: 15px; font-weight: 700; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
-                        📅 X(트위터) 예약 게시물 캘린더 관리자
-                    </span>
-                    <span id="calendar-master-toggle-icon" style="font-size: 15px; color: var(--text-secondary); transition: transform 0.3s ease; transform: rotate(180deg);">▲</span>
-                </div>
-                
-                <div id="calendar-master-content" style="display: block; margin-top: 20px;">
-                    <div id="calendar" style="min-height: 500px; background: rgba(11, 15, 25, 0.5); padding: 15px; border-radius: 8px; border: 1px solid var(--card-border);"></div>
-                </div>
-            </div>
-        </div>
 
         <!-- 💻 Trends_Copy 콘텐츠 변환 워크스테이션 & 라이브러리 관리 (접이식) -->
         <div class="container" style="max-width: 100%; width: 100%; margin: 20px auto 0 auto; padding-top: 0; display: block; padding-bottom: 0;">
@@ -1801,6 +1786,22 @@
                 </div>
             </div>
         </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📅 X(트위터) 예약 게시물 캘린더 관리자 (접이식) -->
+    <div class="container" style="max-width: 100%; width: 100%; margin: 20px auto 0 auto; padding-top: 0; display: block; padding-bottom: 0;">
+        <div class="card" id="calendar-master-card" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(15, 23, 42, 0.4); padding: 16px 20px; margin-bottom: 0;">
+            <div class="card-title" id="calendar-master-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; user-select: none;" onclick="toggleCalendarMaster()">
+                <span style="font-size: 15px; font-weight: 700; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
+                    📅 X(트위터) 예약 게시물 캘린더 관리자
+                </span>
+                <span id="calendar-master-toggle-icon" style="font-size: 15px; color: var(--text-secondary); transition: transform 0.3s ease; transform: rotate(0deg);">▼</span>
+            </div>
+            
+            <div id="calendar-master-content" style="display: none; margin-top: 20px;">
+                <div id="calendar" style="min-height: 500px; background: rgba(11, 15, 25, 0.5); padding: 15px; border-radius: 8px; border: 1px solid var(--card-border);"></div>
             </div>
         </div>
     </div>

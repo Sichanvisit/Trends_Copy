@@ -13,5 +13,9 @@ echo   To stop the server, press Ctrl+C in this window.
 echo ============================================================
 echo.
 start http://127.0.0.1:8000
-python main.py --web
+if exist .venv\Scripts\python.exe (
+    .venv\Scripts\python.exe main.py --web
+) else (
+    python main.py --web
+)
 pause
