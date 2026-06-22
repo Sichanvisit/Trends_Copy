@@ -38,3 +38,9 @@ LOCAL_QWEN_MODEL = os.getenv("LOCAL_QWEN_MODEL", "qwen3.5:4b-instruct")
 
 # 기본 선택값 (디버깅용)
 DEFAULT_MODEL = "gpt-4o-mini"
+
+# X (Twitter) API Keys
+X_CONSUMER_KEY = os.getenv("X_CONSUMER_KEY", "")
+X_CONSUMER_SECRET = os.getenv("X_CONSUMER_SECRET", "")
+X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN", "")
+X_ACCESS_TOKEN_SECRET = os.getenv("X_ACCESS_TOKEN_SECRET", "")

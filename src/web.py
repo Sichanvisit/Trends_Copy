@@ -1351,6 +1351,79 @@ def generate_story_card_direct_api(req: DirectStoryCardRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- X (Twitter) Scheduled Posts API ---
 
+class CreateScheduleRequest(BaseModel):
+    text: str
+    scheduled_at: str
 
+class UpdateScheduleRequest(BaseModel):
+    text: Optional[str] = None
+    scheduled_at: Optional[str] = None
+    status: Optional[str] = None
 
+@app.get("/api/schedule")
+def get_schedule_api(start: Optional[str] = None, end: Optional[str] = None):
+    from src.scheduler import get_scheduled_tweets
+    return get_scheduled_tweets(start, end)
+
+@app.post("/api/schedule")
+def create_schedule_api(req: CreateScheduleRequest):
+    from src.scheduler import add_scheduled_tweet
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Tweet content cannot be empty")
+    new_id = add_scheduled_tweet(req.text, req.scheduled_at)
+    if new_id is None:
+        raise HTTPException(status_code=500, detail="Failed to save scheduled tweet")
+    return {"status": "success", "id": new_id}
+
+@app.put("/api/schedule/{post_id}")
+def update_schedule_api(post_id: int, req: UpdateScheduleRequest):
+    from src.scheduler import update_scheduled_tweet
+    success = update_scheduled_tweet(
+        post_id,
+        text=req.text,
+        scheduled_at=req.scheduled_at,
+        status=req.status
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Scheduled tweet not found or no changes made")
+    return {"status": "success"}
+
+@app.delete("/api/schedule/{post_id}")
+def delete_schedule_api(post_id: int):
+    from src.scheduler import delete_scheduled_tweet
+    success = delete_scheduled_tweet(post_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Scheduled tweet not found")
+    return {"status": "success"}
+
+@app.post("/api/schedule/{post_id}/post_now")
+def post_now_api(post_id: int):
+    from src.scheduler import get_scheduled_tweet, post_to_x, update_scheduled_tweet
+    tweet = get_scheduled_tweet(post_id)
+    if not tweet:
+        raise HTTPException(status_code=404, detail="Scheduled tweet not found")
+    
+    update_scheduled_tweet(post_id, status="posting")
+    res = post_to_x(tweet["text"])
+    if res["success"]:
+        update_scheduled_tweet(
+            post_id,
+            status="posted",
+            tweet_id=res["tweet_id"],
+            error_message=None
+        )
+        return {"status": "success", "tweet_id": res["tweet_id"]}
+    else:
+        update_scheduled_tweet(
+            post_id,
+            status="failed",
+            error_message=res.get("error", "Unknown error")
+        )
+        raise HTTPException(status_code=500, detail=res.get("error", "X API posting failed"))
+
+@app.on_event("startup")
+def startup_event():
+    from src.scheduler import start_scheduler
+    start_scheduler()
