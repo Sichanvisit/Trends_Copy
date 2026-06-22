@@ -1860,7 +1860,29 @@
 
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="form-label">예약 발송 일시</label>
-                <input type="datetime-local" id="schedule-datetime" class="input-text" style="height: 38px; background-color: #0b0f19;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="datetime-local" id="schedule-datetime" class="input-text" style="height: 38px; background-color: #0b0f19; flex: 1;">
+                </div>
+                
+                <!-- 시간 빠른 설정 버튼 -->
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; background: rgba(255,255,255,0.01); border: 1px solid var(--card-border); padding: 10px; border-radius: 8px;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <span style="color: var(--text-secondary); width: 65px; flex-shrink: 0; font-weight: 600;">🕒 빠른 예약:</span>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto;" onclick="quickSetScheduleTime('5m')">+5분</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto;" onclick="quickSetScheduleTime('20m')">+20분</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto;" onclick="quickSetScheduleTime('1h')">+1시간</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto;" onclick="quickSetScheduleTime('7h')">+7시간</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(139, 92, 246, 0.4); color: var(--accent-secondary);" onclick="quickSetScheduleTime('today_18')">오늘 오후 6시</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(139, 92, 246, 0.4); color: var(--accent-secondary);" onclick="quickSetScheduleTime('tomorrow_7')">내일 오전 7시</button>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                        <span style="color: var(--text-secondary); width: 65px; flex-shrink: 0; font-weight: 600;">⏱️ 시간 미세조절:</span>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(239, 68, 68, 0.3); color: #f87171;" onclick="adjustScheduleTime(-20)">-20분</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(239, 68, 68, 0.3); color: #f87171;" onclick="adjustScheduleTime(-10)">-10분</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(16, 185, 129, 0.3); color: #34d399;" onclick="adjustScheduleTime(10)">+10분</button>
+                        <button type="button" class="tab-btn" style="padding: 4px 8px; font-size: 11px; margin: 0; min-width: auto; border-color: rgba(16, 185, 129, 0.3); color: #34d399;" onclick="adjustScheduleTime(20)">+20분</button>
+                    </div>
+                </div>
             </div>
 
             <div id="schedule-status-group" class="form-group" style="margin-bottom: 20px; display: none;">
@@ -2148,6 +2170,59 @@
             const hh = pad(date.getHours());
             const min = pad(date.getMinutes());
             return `${yyyy}-${mm}-${dd} ${hh}:${min}:00`;
+        }
+
+        function formatDateForLocalInput(date) {
+            const pad = (num) => String(num).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            const mm = pad(date.getMonth() + 1);
+            const dd = pad(date.getDate());
+            const hh = pad(date.getHours());
+            const min = pad(date.getMinutes());
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        }
+
+        function quickSetScheduleTime(preset) {
+            const dtInput = document.getElementById("schedule-datetime");
+            if (!dtInput) return;
+            
+            let date = dtInput.value ? new Date(dtInput.value) : new Date();
+            if (isNaN(date.getTime())) {
+                date = new Date();
+            }
+            
+            if (preset === '5m') {
+                date.setMinutes(date.getMinutes() + 5);
+            } else if (preset === '20m') {
+                date.setMinutes(date.getMinutes() + 20);
+            } else if (preset === '1h') {
+                date.setHours(date.getHours() + 1);
+            } else if (preset === '7h') {
+                date.setHours(date.getHours() + 7);
+            } else if (preset === 'today_18') {
+                date.setHours(18, 0, 0, 0);
+                if (date < new Date()) {
+                    date.setDate(date.getDate() + 1);
+                }
+            } else if (preset === 'tomorrow_7') {
+                date.setDate(date.getDate() + 1);
+                date.setHours(7, 0, 0, 0);
+            }
+            
+            dtInput.value = formatDateForLocalInput(date);
+        }
+
+        function adjustScheduleTime(minutes) {
+            const dtInput = document.getElementById("schedule-datetime");
+            if (!dtInput) return;
+            
+            let date = dtInput.value ? new Date(dtInput.value) : new Date();
+            if (isNaN(date.getTime())) {
+                date = new Date();
+            }
+            
+            date.setMinutes(date.getMinutes() + minutes);
+            dtInput.value = formatDateForLocalInput(date);
         }
 
         function updateEventTime(event) {
