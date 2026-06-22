@@ -61,7 +61,9 @@ def _translate_posts_parallel(posts: list[dict]) -> None:
         source = post.get("source")
         if source in [
             "hn_news", "hn_best", "yahoo_jp", "mumsnet",
-            "reddit_boru", "reddit_mc", "reddit_pr", "reddit_aita", "reddit_rel"
+            "reddit_boru", "reddit_mc", "reddit_pr", "reddit_aita", "reddit_rel",
+            "reddit_aww", "reddit_animals_jerks", "reddit_animals_derps", "reddit_animals_funny",
+            "reddit_parenting_fails", "reddit_toddlers", "reddit_children_falling", "reddit_kids_stupid"
         ]:
             title = post.get("title", "")
             if not title or title.startswith("[번역]"):
@@ -396,7 +398,15 @@ def crawl_reddit_subreddit(subreddit: str, limit=20, sort="hot"):
                 "MaliciousCompliance": "reddit_mc",
                 "ProRevenge": "reddit_pr",
                 "AmItheAsshole": "reddit_aita",
-                "relationship_advice": "reddit_rel"
+                "relationship_advice": "reddit_rel",
+                "aww": "reddit_aww",
+                "AnimalsBeingJerks": "reddit_animals_jerks",
+                "AnimalsBeingDerps": "reddit_animals_derps",
+                "AnimalsBeingFunny": "reddit_animals_funny",
+                "Parentingfails": "reddit_parenting_fails",
+                "toddlers": "reddit_toddlers",
+                "ChildrenFallingOver": "reddit_children_falling",
+                "KidsAreFuckingStupid": "reddit_kids_stupid"
             }
             source_key = reddit_key_map.get(subreddit, f"reddit_{subreddit}")
             candidate = _make_post(source_key, title, full_url, rank=score, feed=sort)
@@ -428,6 +438,14 @@ def collect_hot_candidates(limit=None):
         ("reddit_pr", lambda n: crawl_reddit_subreddit("ProRevenge", limit=n, sort="hot"), 10),
         ("reddit_aita", lambda n: crawl_reddit_subreddit("AmItheAsshole", limit=n, sort="hot"), 10),
         ("reddit_rel", lambda n: crawl_reddit_subreddit("relationship_advice", limit=n, sort="hot"), 10),
+        ("reddit_aww", lambda n: crawl_reddit_subreddit("aww", limit=n, sort="hot"), 10),
+        ("reddit_animals_jerks", lambda n: crawl_reddit_subreddit("AnimalsBeingJerks", limit=n, sort="hot"), 10),
+        ("reddit_animals_derps", lambda n: crawl_reddit_subreddit("AnimalsBeingDerps", limit=n, sort="hot"), 10),
+        ("reddit_animals_funny", lambda n: crawl_reddit_subreddit("AnimalsBeingFunny", limit=n, sort="hot"), 10),
+        ("reddit_parenting_fails", lambda n: crawl_reddit_subreddit("Parentingfails", limit=n, sort="hot"), 10),
+        ("reddit_toddlers", lambda n: crawl_reddit_subreddit("toddlers", limit=n, sort="hot"), 10),
+        ("reddit_children_falling", lambda n: crawl_reddit_subreddit("ChildrenFallingOver", limit=n, sort="hot"), 10),
+        ("reddit_kids_stupid", lambda n: crawl_reddit_subreddit("KidsAreFuckingStupid", limit=n, sort="hot"), 10),
         ("nate", lambda n: crawl_nate_pann(limit=n, include_content=False), 10),
         ("nate_news", lambda n: crawl_nate_news(limit=n, include_content=False), 10),
         ("geeknews", lambda n: crawl_geeknews(limit=n, include_content=False), 10),
